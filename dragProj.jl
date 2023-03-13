@@ -4,17 +4,23 @@ using QuadGK
 using TickTock
 using Printf
 
+function alt(n)
+    if n%2 == 0
+        return 1
+    else 
+        return -1
+    end
+end
 
 function Bessel(x,z)
-    n=100
     sum = 0
-    term  = (x/2)^z
+    n=100
     for i in 0:n
-        term *= (-1)*x^2/(n*4)
-        sum += term/gamma(n+z+1)
+        sum+= (((-1)^i)/(factorial(big(i))*gamma(i+z+1)))*(x/2)^(2*i+z)
     end
     return convert(ComplexF64,sum)
 end
+
 
 function dragEq(a,b)
     #put as the first entry the variable you want the equation to be repersenting this 
@@ -23,6 +29,8 @@ function dragEq(a,b)
 end
 
 function quadDragSim()
+    cnt = 0
+
     y = []
     x = []
 
@@ -32,7 +40,9 @@ function quadDragSim()
     ny = 0
     nx = 0
 
-    while ny > -.001
+    while ny > -eps(Float64)
+
+        cnt += 1
 
         push!(x,nx)
         push!(y,ny)
@@ -56,17 +66,37 @@ function quadDragSim()
         ny = y[end]+dt*vy
     end
 
-    return x,y
+    return deleteat!(x,length(x)) , deleteat!(y,length(y)) , cnt-1
 end
 
-function y1()
+function y1(t)
+    arg1 = alpha*real(Bessel(xi*exp(-((c1+c2*am)/m)*t),im*zeta))
+    arg2 = beta*imag(Bessel(xi*exp(-((c1+c2*am)/m)*t),im*zeta))
+    return -(c1*t/(2*c2))+(m/c2)*log(arg1-arg2)-(m/c2)*log(Xi)
+end
 
+function x1(t)
+    v1 = m*v0*cos(th)/(c1+c2*am)
+    v2 = (c1+c2*am)/m
+    return v1*(1-exp(-v2*t))
+end
+
+function quadDragAprox(T)
+    x = []
+    y = []
+
+    for t in T
+        push!(x,x1(t))
+        push!(y,y1(t))
+    end
+
+    return x , y
 end
 
 ##################################
 g = 9.8
 th = (pi/2)*.9
-v0 = 3
+v0 = 2
 m = 1
 
 linC = .00016
@@ -76,11 +106,35 @@ D =.05
 
 global c1 = linC*D
 global c2 = quadC*D^2
+global am = v0*sin(th)
+global zeta = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
+
+global xi = c2*v0*cos(th)/(sqrt(2)*(c1+am*c2))
+global Xi = imag(Bessel(xi,im*zeta))*real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))-real(Bessel(xi,im*zeta))*imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))
+global alpha = imag(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))
+global beta = real(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))
+
+global dt = .001
 
 simX = quadDragSim()[1]
 simY = quadDragSim()[2]
+n = quadDragSim()[3]
 
-global dt = .0001
+t = LinRange(0,dt*n,n)
+aproxX = quadDragAprox(t)[1]
+aproxY = quadDragAprox(t)[2]
 
+#=
+p1 = plot(simX,simY)
+p2 = plot(aproxX,aproxY)
+display(plot(p1,p2))
+=#
 
+abserrorX = abs.(simX .- aproxX)
+abserrorY = abs.(simY .- aproxY)
+relerrorX = abserrorX./simX
+relerrorY = abserrorY./simY
 
+p1 = plot(t,[abserrorX abserrorY],label = ["Absolute Error X" "Absolute Error Y"])
+p2 = plot(t,[relerrorX relerrorY],label = ["Reletive Error X" "Reletive Error Y"])
+display(plot(p1,p2))

@@ -20,7 +20,7 @@ function dragEq(a,b)
     return -(c1/m)*a-(c2/m)*a*sqrt(a^2+b^2)
 end
 
-function quadDragSim()
+function quadDragSim(dt)
     cnt = 0
 
     y = []
@@ -73,13 +73,20 @@ function x1(t)
     return v1*(1-exp(-v2*t))
 end
 
+function y2(t)
+    return -lam1*(m/c1)*exp(-c1*t/m)-g*m*t/c1+lam2
+end
+
 function x2(t)
     return -del1*(m/c1)*exp(-c1*t/m)+del2
 end
+
 function quadDragAprox(T)
     x = []
     y = []
-
+    track = 0
+    cnt = 0
+    n = length(T)
     for t in T
         if t < tau1
             push!(x,x1(t))
@@ -88,20 +95,48 @@ function quadDragAprox(T)
             push!(x,x2(t))
             push!(y,y1(t))
         end
+        cnt += 1
+        if floor(Int,100*cnt/n) > track
+            track += 1
+            @printf("%.f%% \n",100*cnt/n)
+        end
     end
 
     return x , y
 end
 
-##################################
-g = 9.8
-th = (pi/2)*.9
-v0 = 2
-m = 1
+function plotError(dt,cutOff)
+    sim = quadDragSim(dt)
 
-linC = .00016
-quadC = .25
-D =.05
+    simX = sim[1]
+    simY = sim[2]
+    n = sim[3]
+
+    t = LinRange(0,dt*n,n)
+    aprox = quadDragAprox(t)
+    aproxX = aprox[1]
+    aproxY = aprox[2]
+
+    abserrorX = abs.(simX .- aproxX)
+    abserrorY = abs.(simY .- aproxY)
+    relerrorX = deleteat!(abserrorX./simX,floor(Int,n*cutOff):n)
+    relerrorY = deleteat!(abserrorY./simY,floor(Int,n*cutOff):n)
+    relt = deleteat!(collect(t),floor(Int,n*cutOff):n)
+
+    ep1 = plot(t,[abserrorX abserrorY],legend = false)
+    ep2 = plot(relt,[relerrorX relerrorY],legend = false)
+    return ep1 , ep2
+end
+
+##################################
+global g = 9.8
+global th = (pi/2)*.9
+global v0 = 2
+global m = 1
+
+global linC = .00016
+global quadC = .25
+global D =.05
 #################################
 
 global c1 = linC*D
@@ -117,29 +152,38 @@ global Xi = imag(Bessel(xi,im*zeta))*real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta
 global alpha = (imag(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))/Xi
 global beta = (real(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))/Xi
 
+global pxi = xi*exp(-(c1+c2*am)*tau1/m)
+global var1 = (alpha*real(Bessel(pxi,im*zeta+1)-Bessel(pxi,im*zeta-1))-beta*imag(Bessel(pxi,im*zeta+1)-Bessel(pxi,im*zeta-1)))/(alpha*real(Bessel(pxi,im*zeta))-beta*imag(Bessel(pxi,im*zeta)))
 global del1 = v0*cos(th)*exp(-c2*am*tau1/m)
 global del2 = m*v0*cos(th)*(1/(c1+c2*am)+exp(-(c1+c2*am)*tau1/m)*(1/c1-1/(c1+c2*am)))
-global dt = .001
+global lam1 = (g*m/c1-c1/(2*c2))*exp(c1*tau1/m)+(v0*cos(th)/(2*sqrt(2)))*exp(-c2*am*tau1/m)*var1
+global lam2 = (g*m/c1-c1/(2*c2))*(tau1+m/c1)+(m*v0*cos(th)/(2*sqrt(2)*c1))*exp(-(c1+c2*am)*tau1/m)*var1+(m/c2)*log(alpha*real(Bessel(pxi,im*zeta))-beta*imag(Bessel(pxi,im*zeta)))
 
-simX = quadDragSim()[1]
-simY = quadDragSim()[2]
-n = quadDragSim()[3]
+dt = .0001
+sim = quadDragSim(dt)
+simX = sim[1]
+simY = sim[2]
+n = sim[3]
 
 t = LinRange(0,dt*n,n)
-aproxX = quadDragAprox(t)[1]
-aproxY = quadDragAprox(t)[2]
+aprox = quadDragAprox(t)
+aproxX = aprox[1]
+aproxY = aprox[2]
+
+p = plot(simX,simY,label = "Simulation")
+display(plot(p,aproxX,aproxY,label = "Aproximation"))
 
 #=
-p1 = plot(simX,simY)
-p2 = plot(aproxX,aproxY)
-display(plot(p1,p2))
+N = 3
+absErrors = Array{Plots.Plot, 1}(undef, N);
+relErrors = Array{Plots.Plot, 1}(undef, N);
+
+for i in 1:N
+    dt = 10.0^(-i-1)
+    @printf("\n\n\n %.f \n\n\n",dt)
+    absErrors[i] = plotError(dt,.8)[1]
+    relErrors[i] = plotError(dt,.8)[2]
+end
+error = hcat(absErrors,relErrors)
+display(plot(error...,layout = (2,N)))
 =#
-
-abserrorX = abs.(simX .- aproxX)
-abserrorY = abs.(simY .- aproxY)
-relerrorX = abserrorX./simX
-relerrorY = abserrorY./simY
-
-p1 = plot(t,[abserrorX abserrorY],label = ["Absolute Error X" "Absolute Error Y"])
-p2 = plot(t,[relerrorX relerrorY],label = ["Reletive Error X" "Reletive Error Y"])
-display(plot(p1,p2))

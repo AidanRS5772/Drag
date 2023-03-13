@@ -4,14 +4,6 @@ using QuadGK
 using TickTock
 using Printf
 
-function alt(n)
-    if n%2 == 0
-        return 1
-    else 
-        return -1
-    end
-end
-
 function Bessel(x,z)
     sum = 0
     n=100

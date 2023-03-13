@@ -64,7 +64,7 @@ end
 function y1(t)
     arg1 = alpha*real(Bessel(xi*exp(-((c1+c2*am)/m)*t),im*zeta))
     arg2 = beta*imag(Bessel(xi*exp(-((c1+c2*am)/m)*t),im*zeta))
-    return -(c1*t/(2*c2))+(m/c2)*log(arg1-arg2)-(m/c2)*log(Xi)
+    return -(c1*t/(2*c2))+(m/c2)*log(arg1-arg2)
 end
 
 function x1(t)
@@ -73,13 +73,21 @@ function x1(t)
     return v1*(1-exp(-v2*t))
 end
 
+function x2(t)
+    return -del1*(m/c1)*exp(-c1*t/m)+del2
+end
 function quadDragAprox(T)
     x = []
     y = []
 
     for t in T
-        push!(x,x1(t))
-        push!(y,y1(t))
+        if t < tau1
+            push!(x,x1(t))
+            push!(y,y1(t))
+        else
+            push!(x,x2(t))
+            push!(y,y1(t))
+        end
     end
 
     return x , y
@@ -98,14 +106,19 @@ D =.05
 
 global c1 = linC*D
 global c2 = quadC*D^2
+tp = sqrt(m/(g*c2))*atan(v0*sin(th)*sqrt(c2/(m*g)))
+global tau1 = tp-.05
+global tau2 = tp+.05
 global am = v0*sin(th)
 global zeta = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
 
 global xi = c2*v0*cos(th)/(sqrt(2)*(c1+am*c2))
 global Xi = imag(Bessel(xi,im*zeta))*real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))-real(Bessel(xi,im*zeta))*imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))
-global alpha = imag(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))
-global beta = real(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))
+global alpha = (imag(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))/Xi
+global beta = (real(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))/Xi
 
+global del1 = v0*cos(th)*exp(-c2*am*tau1/m)
+global del2 = m*v0*cos(th)*(1/(c1+c2*am)+exp(-(c1+c2*am)*tau1/m)*(1/c1-1/(c1+c2*am)))
 global dt = .001
 
 simX = quadDragSim()[1]

@@ -81,6 +81,10 @@ function x2(t)
     return -del1*(m/c1)*exp(-c1*t/m)+del2
 end
 
+function x3(t)
+    return -m*chi3/(c1-c2*ap)*exp(-(c1-c2*ap)*t/m)+d
+end
+
 function quadDragAprox(T)
     x = []
     y = []
@@ -91,10 +95,14 @@ function quadDragAprox(T)
         if t < tau1
             push!(x,x1(t))
             push!(y,y1(t))
-        else
+        elseif (t > tau1) && (t < tau2)
             push!(x,x2(t))
             push!(y,y1(t))
+        else
+            push!(x,x3(t))
+            push!(y,y1(t))
         end
+
         cnt += 1
         if floor(Int,100*cnt/n) > track
             track += 1
@@ -144,9 +152,9 @@ global c2 = quadC*D^2
 tp = sqrt(m/(g*c2))*atan(v0*sin(th)*sqrt(c2/(m*g)))
 global tau1 = tp-.05
 global tau2 = tp+.05
+
 global am = v0*sin(th)
 global zeta = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
-
 global xi = c2*v0*cos(th)/(sqrt(2)*(c1+am*c2))
 global Xi = imag(Bessel(xi,im*zeta))*real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))-real(Bessel(xi,im*zeta))*imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))
 global alpha = (imag(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))/Xi
@@ -158,6 +166,15 @@ global del1 = v0*cos(th)*exp(-c2*am*tau1/m)
 global del2 = m*v0*cos(th)*(1/(c1+c2*am)+exp(-(c1+c2*am)*tau1/m)*(1/c1-1/(c1+c2*am)))
 global lam1 = (g*m/c1-c1/(2*c2))*exp(c1*tau1/m)+(v0*cos(th)/(2*sqrt(2)))*exp(-c2*am*tau1/m)*var1
 global lam2 = (g*m/c1-c1/(2*c2))*(tau1+m/c1)+(m*v0*cos(th)/(2*sqrt(2)*c1))*exp(-(c1+c2*am)*tau1/m)*var1+(m/c2)*log(alpha*real(Bessel(pxi,im*zeta))-beta*imag(Bessel(pxi,im*zeta)))
+
+global ap = lam1*exp(-c1*tau2/m)-g*m/c1
+global chi3 = del1*exp(-c2*ap*tau2/m)
+global d = m*del1*exp(-c1*tau2/m)*(1/(c1-c2*ap)-1/c1)+del2
+
+println("tau1:")
+println(tau1)
+println("tau2:")
+println(tau2)
 
 dt = .0001
 sim = quadDragSim(dt)
@@ -171,7 +188,7 @@ aproxX = aprox[1]
 aproxY = aprox[2]
 
 p = plot(simX,simY,label = "Simulation")
-display(plot(p,aproxX,aproxY,label = "Aproximation"))
+display(plot!(aproxX,aproxY,label = "Aproximation"))
 
 #=
 N = 3

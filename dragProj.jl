@@ -1,6 +1,5 @@
 using Plots
 using SpecialFunctions
-using QuadGK
 using TickTock
 using Printf
 
@@ -74,7 +73,7 @@ function x1(t)
 end
 
 function y2(t)
-    return -lam1*(m/c1)*exp(-c1*t/m)-g*m*t/c1+lam2
+    return -lam1*(m/c1)*exp(-c1*big(t)/m)-g*m*big(t)/c1+lam2
 end
 
 function x2(t)
@@ -119,7 +118,44 @@ function quadDragAprox(T)
     return x , y
 end
 
+function instVals()
+    global c1 = linC*D
+    global c2 = quadC*D^2
+    tp = sqrt(m/(g*c2))*atan(v0*sin(th)*sqrt(c2/(m*g)))
+    global tau1 = tp-ep
+    global tau2 = tp+ep
+
+    global am = v0*sin(th)
+    global zeta = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
+    global xi = c2*v0*cos(th)/(sqrt(2)*(c1+am*c2))
+    global Xi = imag(Bessel(xi,im*zeta))*real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))-real(Bessel(xi,im*zeta))*imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))
+    global alpha = (imag(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))/Xi
+    global beta = (real(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))/Xi
+
+    global pxi = xi*exp(-(c1+c2*am)*tau1/m)
+    global var1 = (alpha*real(Bessel(pxi,im*zeta+1)-Bessel(pxi,im*zeta-1))-beta*imag(Bessel(pxi,im*zeta+1)-Bessel(pxi,im*zeta-1)))/(alpha*real(Bessel(pxi,im*zeta))-beta*imag(Bessel(pxi,im*zeta)))
+    global del1 = v0*cos(th)*exp(-c2*am*tau1/m)
+    global del2 = m*v0*cos(th)*(1/(c1+c2*am)+exp(-(c1+c2*am)*tau1/m)*(1/c1-1/(c1+c2*am)))
+    global lam1 = (g*m/c1-c1/(2*c2))*exp(c1*tau1/m)+(v0*cos(th)/(2*sqrt(2)))*exp(-c2*am*tau1/m)*var1
+    global lam2 = (g*m/c1-c1/(2*c2))*(tau1+m/c1)+(m*v0*cos(th)/(2*sqrt(2)*c1))*exp(-(c1+c2*am)*tau1/m)*var1+(m/c2)*log(alpha*real(Bessel(pxi,im*zeta))-beta*imag(Bessel(pxi,im*zeta)))
+
+    global ap = lam1*exp(-c1*tau2/m)-g*m/c1
+    global omega = sqrt(c2*g*m+c1^2/4)/(c1-c2*ap)
+    global chi3 = del1*exp(-c2*ap*tau2/m)
+    global d = m*del1*exp(-c1*tau2/m)*(1/(c1-c2*ap)-1/c1)+del2
+    global psi = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(c2/m)*(am*tau1+ap*tau2))
+    global ppsi = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(c1*tau2+c2*am*tau1)/m)
+    global Psi = Bessel(ppsi,-omega)*(Bessel(ppsi,omega+1)-Bessel(ppsi,omega-1))-Bessel(ppsi,omega)*(Bessel(ppsi,-omega+1)-Bessel(ppsi,-omega-1))
+    global Lam = (lam1*c2/c1)*exp(-c1*tau2/m)+(g*c2/c1+c1/(2*m))tau2-c2*lam2/m
+    global mu = Bessel(ppsi,-omega)*(c1/(2*c2)+g*m/c1-lam1*exp(-c1*tau2/m))*(2*c2/((c1-c2*ap)*psi))-Bessel(ppsi,-omega+1)+Bessel(ppsi,-omega-1)
+    global nu = Bessel(ppsi,omega)*(c1/(2*c2)+g*m/c1-lam1*exp(-c1*tau2/m))*(2*c2/((c1-c2*ap)*psi))-Bessel(ppsi,omega+1)+Bessel(ppsi,omega-1)
+
+end
+
 function plotError(dt,cutOff)
+
+    instVals()
+
     sim = quadDragSim(dt)
 
     simX = sim[1]
@@ -142,6 +178,39 @@ function plotError(dt,cutOff)
     return ep1 , ep2
 end
 
+function manyErrorPlots(N,b,cutOff)
+    absErrors = Array{Plots.Plot, 1}(undef, N);
+    relErrors = Array{Plots.Plot, 1}(undef, N);
+
+    for i in 1:N
+        dt = 10.0^(-i-b-1)
+        @printf("\n\n\n!!New Plot!!   dt:%.7f \n\n\n",dt)
+        error = plotError(dt,cutOff)
+        absErrors[i] = error[1]
+        relErrors[i] = error[2]
+    end
+    error = hcat(absErrors,relErrors)
+    return plot(error...,layout = (2,N))
+end
+
+function projPlot(dt)
+
+    instVals()
+
+    sim = quadDragSim(dt)
+    simX = sim[1]
+    simY = sim[2]
+    n = sim[3]
+
+    t = LinRange(0,dt*n,n)
+    aprox = quadDragAprox(t)
+    aproxX = aprox[1]
+    aproxY = aprox[2]
+
+    p = plot(simX,simY,label = "Simulation")
+    return plot(p,aproxX,aproxY,label = "Aproximation")
+end
+
 ##################################
 global g = 9.8
 global th = (pi/2)*.9
@@ -151,74 +220,6 @@ global m = 1
 global linC = .00016
 global quadC = .25
 global D =.05
+global ep = .05
 #################################
 
-global c1 = linC*D
-global c2 = quadC*D^2
-tp = sqrt(m/(g*c2))*atan(v0*sin(th)*sqrt(c2/(m*g)))
-global tau1 = tp-.05
-global tau2 = tp+.05
-
-global am = v0*sin(th)
-global zeta = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
-global xi = c2*v0*cos(th)/(sqrt(2)*(c1+am*c2))
-global Xi = imag(Bessel(xi,im*zeta))*real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))-real(Bessel(xi,im*zeta))*imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))
-global alpha = (imag(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))/Xi
-global beta = (real(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))/Xi
-
-global pxi = xi*exp(-(c1+c2*am)*tau1/m)
-global var1 = (alpha*real(Bessel(pxi,im*zeta+1)-Bessel(pxi,im*zeta-1))-beta*imag(Bessel(pxi,im*zeta+1)-Bessel(pxi,im*zeta-1)))/(alpha*real(Bessel(pxi,im*zeta))-beta*imag(Bessel(pxi,im*zeta)))
-global del1 = v0*cos(th)*exp(-c2*am*tau1/m)
-global del2 = m*v0*cos(th)*(1/(c1+c2*am)+exp(-(c1+c2*am)*tau1/m)*(1/c1-1/(c1+c2*am)))
-global lam1 = (g*m/c1-c1/(2*c2))*exp(c1*tau1/m)+(v0*cos(th)/(2*sqrt(2)))*exp(-c2*am*tau1/m)*var1
-global lam2 = (g*m/c1-c1/(2*c2))*(tau1+m/c1)+(m*v0*cos(th)/(2*sqrt(2)*c1))*exp(-(c1+c2*am)*tau1/m)*var1+(m/c2)*log(alpha*real(Bessel(pxi,im*zeta))-beta*imag(Bessel(pxi,im*zeta)))
-
-global ap = lam1*exp(-c1*tau2/m)-g*m/c1
-global omega = sqrt(c2*g*m+c1^2/4)/(c1-c2*ap)
-global chi3 = del1*exp(-c2*ap*tau2/m)
-global d = m*del1*exp(-c1*tau2/m)*(1/(c1-c2*ap)-1/c1)+del2
-global psi = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(c2/m)*(am*tau1+ap*tau2))
-global ppsi = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(c1*tau2+c2*am*tau1)/m)
-global Psi = Bessel(ppsi,-omega)*(Bessel(ppsi,omega+1)-Bessel(ppsi,omega-1))-Bessel(ppsi,omega)*(Bessel(ppsi,-omega+1)-Bessel(ppsi,-omega-1))
-global Lam = (lam1*c2/c1)*exp(-c1*tau2/m)+(g*c2/c1+c1/(2*m))tau2-c2*lam2/m
-global mu = Bessel(ppsi,-omega)*(c1/(2*c2)+g*m/c1-lam1*exp(-c1*tau2/m))*(2*c2/((c1-c2*ap)*psi))-Bessel(ppsi,-omega+1)+Bessel(ppsi,-omega-1)
-global nu = Bessel(ppsi,omega)*(c1/(2*c2)+g*m/c1-lam1*exp(-c1*tau2/m))*(2*c2/((c1-c2*ap)*psi))-Bessel(ppsi,omega+1)+Bessel(ppsi,omega-1)
-
-#=
-dt = .0001
-sim = quadDragSim(dt)
-simX = sim[1]
-simY = sim[2]
-n = sim[3]
-
-t = LinRange(0,dt*n,n)
-aprox = quadDragAprox(t)
-aproxX = aprox[1]
-aproxY = aprox[2]
-
-p = plot(simX,simY,label = "Simulation")
-p1 = plot(p,aproxX,aproxY,label = "Aproximation")
-=#
-dt = .00001
-tick()
-error = plotError(dt,.9)
-tock()
-absE = error[1]
-relE = error[2]
-
-display(plot(absE,relE))
-
-#=
-N = 3
-absErrors = Array{Plots.Plot, 1}(undef, N);
-relErrors = Array{Plots.Plot, 1}(undef, N);
-
-for i in 1:N
-    dt = 10.0^(-i-1)
-    @printf("\n\n\n %.f \n\n\n",dt)
-    absErrors[i] = plotError(dt,.8)[1]
-    relErrors[i] = plotError(dt,.8)[2]
-end
-error = hcat(absErrors,relErrors)
-display(plot(error...,layout = (2,N)))
-=#

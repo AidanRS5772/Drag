@@ -17,7 +17,7 @@ end
 function dragEq(a,b)
     #put as the first entry the variable you want the equation to be repersenting this 
     #does not include the inhomogeneous part of the y equation'
-    return -(c1/m)*a-(c2/m)*a*sqrt(a^2+b^2)
+    return -(c1/m)*big(a)-(c2/m)*big(a)*sqrt(big(a)^2+big(b)^2)
 end
 
 function quadDragSim()
@@ -171,20 +171,24 @@ function plotError(dt,cutOff)
     aproxX = aprox[1]
     aproxY = aprox[2]
 
-    splineX = LinearSplineInterpolation(t, aproxX)
-    splineY = LinearSplineInterpolation(t, aproxY)
-    splineT = LinRange(0,time,cnt)
-    cubeAproxX = splineX(splineT)
-    cubeAproxY = splineY(splineT)
+    splineX = linear_interpolation(t, aproxX)
+    splineY = linear_interpolation(t, aproxY)
+    splineT = big.(collect(LinRange(0,time,cnt)))
+    linAproxX = big.(collect(splineX(splineT)))
+    linAproxY = big.(collect(splineY(splineT)))
 
-    abserrorX = abs.(simX .- cubeAproxX)
-    abserrorY = abs.(simY .- cubeAproxY)
-    relerrorX = deleteat!(abserrorX./simX,floor(Int,n*cutOff):n)
-    relerrorY = deleteat!(abserrorY./simY,floor(Int,n*cutOff):n)
-    relt = deleteat!(collect(t),floor(Int,n*cutOff):n)
+    abserrorX = abs.(simX .- linAproxX)
+    abserrorY = abs.(simY .- linAproxY)
+    relerrorX = abserrorX./simX
+    relerrorY = abserrorY./simY
+    relT = collect(splineT)
 
-    ep1 = plot(t,[abserrorX abserrorY],legend = false)
-    ep2 = plot(relt,[relerrorX relerrorY],legend = false)
+    nrelerrorX = relerrorX[floor(Int,cnt*cutOff):floor(Int,cnt*(1-cutOff))]
+    nrelerrorY = relerrorY[floor(Int,cnt*cutOff):floor(Int,cnt*(1-cutOff))]
+    nrelT = relT[floor(Int,cnt*cutOff):floor(Int,cnt*(1-cutOff))]
+
+    ep1 = plot(splineT,[abserrorX abserrorY],legend = false)
+    ep2 = plot(nrelT,[nrelerrorX nrelerrorY],legend = false)
     return ep1 , ep2
 end
 
@@ -233,4 +237,4 @@ global D =.05
 global ep = .02
 #################################
 
-display(manyErrorPlots(3,3,.95))
+display(manyErrorPlots(3,2,.05))

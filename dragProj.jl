@@ -1,4 +1,5 @@
 using Plots
+using Interpolations
 using SpecialFunctions
 using TickTock
 using Printf
@@ -19,7 +20,9 @@ function dragEq(a,b)
     return -(c1/m)*a-(c2/m)*a*sqrt(a^2+b^2)
 end
 
-function quadDragSim(dt)
+function quadDragSim()
+    dt = 10.0^-6
+    time = 0
     cnt = 0
 
     y = []
@@ -31,8 +34,9 @@ function quadDragSim(dt)
     ny = 0
     nx = 0
 
-    while ny > -eps(Float64)
+    while ny > -eps(Float64) 
 
+        time += dt
         cnt += 1
 
         push!(x,nx)
@@ -57,7 +61,7 @@ function quadDragSim(dt)
         ny = y[end]+dt*vy
     end
 
-    return deleteat!(x,length(x)) , deleteat!(y,length(y)) , cnt-1
+    return x , y , time , cnt
 end
 
 function y1(t)
@@ -153,22 +157,28 @@ function instVals()
 end
 
 function plotError(dt,cutOff)
-
     instVals()
 
-    sim = quadDragSim(dt)
+    sim = quadDragSim()
 
     simX = sim[1]
     simY = sim[2]
-    n = sim[3]
+    time = sim[3]
+    cnt = sim[4]
 
-    t = LinRange(0,dt*n,n)
+    t = LinRange(0,time,floor(Int,time/dt))
     aprox = quadDragAprox(t)
     aproxX = aprox[1]
     aproxY = aprox[2]
 
-    abserrorX = abs.(simX .- aproxX)
-    abserrorY = abs.(simY .- aproxY)
+    splineX = LinearSplineInterpolation(t, aproxX)
+    splineY = LinearSplineInterpolation(t, aproxY)
+    splineT = LinRange(0,time,cnt)
+    cubeAproxX = splineX(splineT)
+    cubeAproxY = splineY(splineT)
+
+    abserrorX = abs.(simX .- cubeAproxX)
+    abserrorY = abs.(simY .- cubeAproxY)
     relerrorX = deleteat!(abserrorX./simX,floor(Int,n*cutOff):n)
     relerrorY = deleteat!(abserrorY./simY,floor(Int,n*cutOff):n)
     relt = deleteat!(collect(t),floor(Int,n*cutOff):n)
@@ -194,15 +204,15 @@ function manyErrorPlots(N,b,cutOff)
 end
 
 function plotProj(dt)
-
     instVals()
 
-    sim = quadDragSim(dt)
+    sim = quadDragSim()
+
     simX = sim[1]
     simY = sim[2]
-    n = sim[3]
+    time = sim[3]
 
-    t = LinRange(0,dt*n,n)
+    t = LinRange(0,time,floor(Int,time/dt))
     aprox = quadDragAprox(t)
     aproxX = aprox[1]
     aproxY = aprox[2]
@@ -222,3 +232,5 @@ global quadC = .25
 global D =.05
 global ep = .02
 #################################
+
+display(manyErrorPlots(3,3,.95))

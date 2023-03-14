@@ -63,7 +63,7 @@ end
 function y1(t)
     arg1 = alpha*real(Bessel(xi*exp(-((c1+c2*am)/m)*t),im*zeta))
     arg2 = beta*imag(Bessel(xi*exp(-((c1+c2*am)/m)*t),im*zeta))
-    return -(c1*t/(2*c2))+(m/c2)*log(arg1-arg2)
+    return -(c1*big(t)/(2*c2))+(m/c2)*log(arg1-arg2)
 end
 
 function x1(t)
@@ -83,7 +83,7 @@ end
 function y3(t)
     arg1 = mu*Bessel(psi*exp(-(c1-c2*ap)*t/m),omega)
     arg2 = nu*Bessel(psi*exp(-(c1-c2*ap)*t/m),-omega)
-    return c1*t/(2*c2)-(m/c2)*log(arg1-arg2)+(m/c2)*(log(Psi)-Lam)
+    return c1*big(t)/(2*c2)-(m/c2)*log(arg1-arg2)+(m/c2)*(log(Psi)-Lam)
 end
 
 function x3(t)
@@ -183,7 +183,7 @@ function manyErrorPlots(N,b,cutOff)
     relErrors = Array{Plots.Plot, 1}(undef, N);
 
     for i in 1:N
-        dt = 10.0^(-i-b-1)
+        dt = 10.0^(-i-b+1)
         @printf("\n\n\n!!New Plot!!   dt:%.7f \n\n\n",dt)
         error = plotError(dt,cutOff)
         absErrors[i] = error[1]
@@ -193,7 +193,7 @@ function manyErrorPlots(N,b,cutOff)
     return plot(error...,layout = (2,N))
 end
 
-function projPlot(dt)
+function plotProj(dt)
 
     instVals()
 
@@ -220,6 +220,5 @@ global m = 1
 global linC = .00016
 global quadC = .25
 global D =.05
-global ep = .05
+global ep = .02
 #################################
-

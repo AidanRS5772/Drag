@@ -10,7 +10,7 @@ function Bessel(x,z)
     for i in 0:n
         sum+= (((-1)^i)/(factorial(big(i))*gamma(i+z+1)))*(x/2)^(2*i+z)
     end
-    return convert(ComplexF64,sum)
+    return sum
 end
 
 
@@ -81,6 +81,12 @@ function x2(t)
     return -del1*(m/c1)*exp(-c1*t/m)+del2
 end
 
+function y3(t)
+    arg1 = mu*Bessel(psi*exp(-(c1-c2*ap)*t/m),omega)
+    arg2 = nu*Bessel(psi*exp(-(c1-c2*ap)*t/m),-omega)
+    return c1*t/(2*c2)-(m/c2)*log(arg1-arg2)+(m/c2)*(log(Psi)-Lam)
+end
+
 function x3(t)
     return -m*chi3/(c1-c2*ap)*exp(-(c1-c2*ap)*t/m)+d
 end
@@ -97,10 +103,10 @@ function quadDragAprox(T)
             push!(y,y1(t))
         elseif (t > tau1) && (t < tau2)
             push!(x,x2(t))
-            push!(y,y1(t))
+            push!(y,y2(t))
         else
             push!(x,x3(t))
-            push!(y,y1(t))
+            push!(y,y3(t))
         end
 
         cnt += 1
@@ -168,14 +174,17 @@ global lam1 = (g*m/c1-c1/(2*c2))*exp(c1*tau1/m)+(v0*cos(th)/(2*sqrt(2)))*exp(-c2
 global lam2 = (g*m/c1-c1/(2*c2))*(tau1+m/c1)+(m*v0*cos(th)/(2*sqrt(2)*c1))*exp(-(c1+c2*am)*tau1/m)*var1+(m/c2)*log(alpha*real(Bessel(pxi,im*zeta))-beta*imag(Bessel(pxi,im*zeta)))
 
 global ap = lam1*exp(-c1*tau2/m)-g*m/c1
+global omega = sqrt(c2*g*m+c1^2/4)/(c1-c2*ap)
 global chi3 = del1*exp(-c2*ap*tau2/m)
 global d = m*del1*exp(-c1*tau2/m)*(1/(c1-c2*ap)-1/c1)+del2
+global psi = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(c2/m)*(am*tau1+ap*tau2))
+global ppsi = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(c1*tau2+c2*am*tau1)/m)
+global Psi = Bessel(ppsi,-omega)*(Bessel(ppsi,omega+1)-Bessel(ppsi,omega-1))-Bessel(ppsi,omega)*(Bessel(ppsi,-omega+1)-Bessel(ppsi,-omega-1))
+global Lam = (lam1*c2/c1)*exp(-c1*tau2/m)+(g*c2/c1+c1/(2*m))tau2-c2*lam2/m
+global mu = Bessel(ppsi,-omega)*(c1/(2*c2)+g*m/c1-lam1*exp(-c1*tau2/m))*(2*c2/((c1-c2*ap)*psi))-Bessel(ppsi,-omega+1)+Bessel(ppsi,-omega-1)
+global nu = Bessel(ppsi,omega)*(c1/(2*c2)+g*m/c1-lam1*exp(-c1*tau2/m))*(2*c2/((c1-c2*ap)*psi))-Bessel(ppsi,omega+1)+Bessel(ppsi,omega-1)
 
-println("tau1:")
-println(tau1)
-println("tau2:")
-println(tau2)
-
+#=
 dt = .0001
 sim = quadDragSim(dt)
 simX = sim[1]
@@ -188,7 +197,16 @@ aproxX = aprox[1]
 aproxY = aprox[2]
 
 p = plot(simX,simY,label = "Simulation")
-display(plot!(aproxX,aproxY,label = "Aproximation"))
+p1 = plot(p,aproxX,aproxY,label = "Aproximation")
+=#
+dt = .00001
+tick()
+error = plotError(dt,.9)
+tock()
+absE = error[1]
+relE = error[2]
+
+display(plot(absE,relE))
 
 #=
 N = 3

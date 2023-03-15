@@ -1,7 +1,4 @@
-using Plots
-using Interpolations
 using SpecialFunctions
-using TickTock
 using Printf
 
 function Bessel(x,z)
@@ -21,6 +18,9 @@ function dragEq(a,b)
 end
 
 function quadDragSim()
+
+    instInput()
+
     dt = 10.0^-6
     time = 0
     cnt = 0
@@ -95,6 +95,10 @@ function x3(t)
 end
 
 function quadDragAprox(T)
+
+    instInput()
+    compVals()
+
     x = []
     y = []
     track = 0
@@ -122,14 +126,31 @@ function quadDragAprox(T)
     return x , y
 end
 
-function instVals()
+function instInput()
+    global g = 9.8
+    global th = (pi/2)*.9
+    global v0 = 2
+    global m = 1
+    global D =.05
+
+    global linC = .00016
+    global quadC = .25
     global c1 = linC*D
     global c2 = quadC*D^2
+end
+
+function compVals()
+    #free parameters
+    global ep1 = .02
+    global ep2 = .02
+
     tp = sqrt(m/(g*c2))*atan(v0*sin(th)*sqrt(c2/(m*g)))
     global tau1 = tp-ep1
     global tau2 = tp+ep2
 
+    #free paremter
     global am = v0*sin(th)
+
     global zeta = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
     global xi = c2*v0*cos(th)/(sqrt(2)*(c1+am*c2))
     global Xi = imag(Bessel(xi,im*zeta))*real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))-real(Bessel(xi,im*zeta))*imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))
@@ -143,7 +164,9 @@ function instVals()
     global lam1 = (g*m/c1-c1/(2*c2))*exp(c1*tau1/m)+(v0*cos(th)/(2*sqrt(2)))*exp(-c2*am*tau1/m)*var1
     global lam2 = (g*m/c1-c1/(2*c2))*(tau1+m/c1)+(m*v0*cos(th)/(2*sqrt(2)*c1))*exp(-(c1+c2*am)*tau1/m)*var1+(m/c2)*log(alpha*real(Bessel(pxi,im*zeta))-beta*imag(Bessel(pxi,im*zeta)))
 
+    #free parameter
     global ap = lam1*exp(-c1*tau2/m)-g*m/c1
+
     global omega = sqrt(c2*g*m+c1^2/4)/(c1-c2*ap)
     global chi3 = del1*exp(-c2*ap*tau2/m)
     global d = m*del1*exp(-c1*tau2/m)*(1/(c1-c2*ap)-1/c1)+del2
@@ -153,89 +176,4 @@ function instVals()
     global Lam = (lam1*c2/c1)*exp(-c1*tau2/m)+(g*c2/c1+c1/(2*m))tau2-c2*lam2/m
     global mu = Bessel(ppsi,-omega)*(c1/(2*c2)+g*m/c1-lam1*exp(-c1*tau2/m))*(2*c2/((c1-c2*ap)*psi))-Bessel(ppsi,-omega+1)+Bessel(ppsi,-omega-1)
     global nu = Bessel(ppsi,omega)*(c1/(2*c2)+g*m/c1-lam1*exp(-c1*tau2/m))*(2*c2/((c1-c2*ap)*psi))-Bessel(ppsi,omega+1)+Bessel(ppsi,omega-1)
-
 end
-
-function plotError(dt,cutOff,simX,simY,time,cnt)
-
-    t = LinRange(0,time,floor(Int,time/dt))
-    aprox = quadDragAprox(t)
-    aproxX = convert.(Float64 , aprox[1])
-    aproxY = convert.(Float64 , aprox[2])
-
-    splineX = CubicSplineInterpolation(t, aproxX)
-    splineY = CubicSplineInterpolation(t, aproxY)
-    splineT = big.(collect(LinRange(0,time,cnt)))
-    linAproxX = big.(collect(splineX(splineT)))
-    linAproxY = big.(collect(splineY(splineT)))
-
-    abserrorX = abs.(simX .- linAproxX)
-    abserrorY = abs.(simY .- linAproxY)
-    relerrorX = abserrorX./simX
-    relerrorY = abserrorY./simY
-    relT = collect(splineT)
-
-    nrelerrorX = relerrorX[floor(Int,cnt*cutOff):floor(Int,cnt*(1-cutOff))]
-    nrelerrorY = relerrorY[floor(Int,cnt*cutOff):floor(Int,cnt*(1-cutOff))]
-    nrelT = relT[floor(Int,cnt*cutOff):floor(Int,cnt*(1-cutOff))]
-
-    ep1 = plot(splineT,[abserrorX abserrorY],legend = false)
-    ep2 = plot(nrelT,[nrelerrorX nrelerrorY],legend = false)
-    return ep1 , ep2
-end
-
-function manyErrorPlots(N,b,cutOff)
-    absErrors = Array{Plots.Plot, 1}(undef, N);
-    relErrors = Array{Plots.Plot, 1}(undef, N);
-
-    instVals()
-
-    sim = quadDragSim()
-
-    simX = sim[1]
-    simY = sim[2]
-    time = sim[3]
-    cnt = sim[4]
-
-    for i in 1:N
-        dt = 10.0^(-i-b+1)
-        @printf("\n\n\n!!New Plot!!   dt:%.6f \n\n\n",dt)
-        error = plotError(dt,cutOff,simX,simY,time,cnt)
-        absErrors[i] = error[1]
-        relErrors[i] = error[2]
-    end
-    error = hcat(absErrors,relErrors)
-    return plot(error...,layout = (2,N))
-end
-
-function plotProj(dt)
-    instVals()
-
-    sim = quadDragSim()
-
-    simX = sim[1]
-    simY = sim[2]
-    time = sim[3]
-
-    t = LinRange(0,time,floor(Int,time/dt))
-    aprox = quadDragAprox(t)
-    aproxX = aprox[1]
-    aproxY = aprox[2]
-
-    p = plot(simX,simY,label = "Simulation")
-    return plot(p,aproxX,aproxY,label = "Aproximation")
-end
-
-##################################
-global g = 9.8
-global th = (pi/2)*.9
-global v0 = 2
-global m = 1
-
-global linC = .00016
-global quadC = .25
-global D =.05
-global ep1 = .005
-#certian ep2 values throw errors
-global ep2 = .02
-#################################

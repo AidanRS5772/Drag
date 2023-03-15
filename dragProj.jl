@@ -157,14 +157,6 @@ function instVals()
 end
 
 function plotError(dt,cutOff,simX,simY,time,cnt)
-    instVals()
-
-    sim = quadDragSim()
-
-    simX = sim[1]
-    simY = sim[2]
-    time = sim[3]
-    cnt = sim[4]
 
     t = LinRange(0,time,floor(Int,time/dt))
     aprox = quadDragAprox(t)

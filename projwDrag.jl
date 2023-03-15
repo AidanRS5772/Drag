@@ -17,11 +17,7 @@ function dragEq(a,b)
     return -(c1/m)*big(a)-(c2/m)*big(a)*sqrt(big(a)^2+big(b)^2)
 end
 
-function quadDragSim()
-
-    instInput()
-
-    dt = 10.0^-6
+function quadDragSim(dt = 10.0^-6)
     time = 0
     cnt = 0
 
@@ -61,7 +57,9 @@ function quadDragSim()
         ny = y[end]+dt*vy
     end
 
-    return x , y , time , cnt
+    ymaxi = findmax(y)[2]
+
+    return x , y , time , cnt , ymaxi*time/cnt
 end
 
 function y1(t)
@@ -95,10 +93,6 @@ function x3(t)
 end
 
 function quadDragAprox(T)
-
-    instInput()
-    compVals()
-
     x = []
     y = []
     track = 0
@@ -126,27 +120,26 @@ function quadDragAprox(T)
     return x , y
 end
 
-function instInput()
-    global g = 9.8
-    global th = (pi/2)*.9
-    global v0 = 2
-    global m = 1
-    global D =.05
+function instInputs(;theta = (pi/2)*.95 , velocity = 1.0 , mass = 1.0 , diameter = .05)
+    #input values
+    global th = theta
+    global v0 = velocity
+    global m = mass
+    global D = diameter
 
+    global g = 9.8
     global linC = .00016
     global quadC = .25
     global c1 = linC*D
     global c2 = quadC*D^2
-end
 
-function compVals()
     #free parameters
-    global ep1 = .02
-    global ep2 = .02
+    global ep1 = .05
+    global ep2 = .05
 
-    tp = sqrt(m/(g*c2))*atan(v0*sin(th)*sqrt(c2/(m*g)))
-    global tau1 = tp-ep1
-    global tau2 = tp+ep2
+    tp = quadDragSim(.0001)[5]
+    global tau1 = tp - ep1
+    global tau2 = tp + ep2
 
     #free paremter
     global am = v0*sin(th)

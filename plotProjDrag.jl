@@ -4,7 +4,14 @@ using Printf
 
 include("projwDrag.jl")
 
-function plotError(dt,cutOff,simX,simY,time,cnt)
+function plotError(;dt = 10^-4,cutOff = .05)
+
+    sim = quadDragSim()
+
+    simX = sim[1]
+    simY = sim[2]
+    time = sim[3]
+    cnt = sim[4]
 
     t = LinRange(0,time,floor(Int,time/dt))
     aprox = quadDragAprox(t)
@@ -36,17 +43,10 @@ function manyErrorPlots(N,b,cutOff)
     absErrors = Array{Plots.Plot, 1}(undef, N);
     relErrors = Array{Plots.Plot, 1}(undef, N);
 
-    sim = quadDragSim()
-
-    simX = sim[1]
-    simY = sim[2]
-    time = sim[3]
-    cnt = sim[4]
-
     for i in 1:N
         dt = 10.0^(-i-b+1)
         @printf("\n\n\n!!New Plot!!   dt:%.6f \n\n\n",dt)
-        error = plotError(dt,cutOff,simX,simY,time,cnt)
+        error = plotError(dt,cutOff)
         absErrors[i] = error[1]
         relErrors[i] = error[2]
     end
@@ -54,7 +54,7 @@ function manyErrorPlots(N,b,cutOff)
     return plot(error...,layout = (2,N))
 end
 
-function plotProj(dt)
+function plotProj(;dt = 10.0^-4)
 
     sim = quadDragSim()
 

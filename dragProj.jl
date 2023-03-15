@@ -126,8 +126,8 @@ function instVals()
     global c1 = linC*D
     global c2 = quadC*D^2
     tp = sqrt(m/(g*c2))*atan(v0*sin(th)*sqrt(c2/(m*g)))
-    global tau1 = tp-ep
-    global tau2 = tp+ep
+    global tau1 = tp-ep1
+    global tau2 = tp+ep2
 
     global am = v0*sin(th)
     global zeta = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
@@ -227,8 +227,8 @@ function plotProj(dt)
 
     t = LinRange(0,time,floor(Int,time/dt))
     aprox = quadDragAprox(t)
-    aproxX = float(aprox[1])
-    aproxY = float(aprox[2])
+    aproxX = aprox[1]
+    aproxY = aprox[2]
 
     p = plot(simX,simY,label = "Simulation")
     return plot(p,aproxX,aproxY,label = "Aproximation")
@@ -243,5 +243,7 @@ global m = 1
 global linC = .00016
 global quadC = .25
 global D =.05
-global ep = .02
+global ep1 = .005
+#certian ep2 values throw errors
+global ep2 = .02
 #################################

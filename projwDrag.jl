@@ -65,13 +65,11 @@ end
 function y1(t)
     arg1 = alpha*real(Bessel(xi*exp(-((c1+c2*am)/m)*t),im*zeta))
     arg2 = beta*imag(Bessel(xi*exp(-((c1+c2*am)/m)*t),im*zeta))
-    return -(c1*big(t)/(2*c2))+(m/c2)*log(arg1-arg2)
+    return -(c1*big(t)/(2*c2))+(m/c2)*log(arg1-arg2)+(m/c2)*log(π*xi/(2*sinh(π*zeta)))
 end
 
 function x1(t)
-    v1 = m*v0*cos(th)/(c1+c2*am)
-    v2 = (c1+c2*am)/m
-    return v1*(1-exp(-v2*t))
+    return (sqrt(2)*m*xi/c2)*(1-exp(-(c1+c2*am)*t/m))
 end
 
 function y2(t)
@@ -103,11 +101,11 @@ function quadDragAprox(T)
             push!(x,x1(t))
             push!(y,y1(t))
         elseif (t > tau1) && (t < tau2)
-            push!(x,x2(t))
-            push!(y,y2(t))
+            push!(x,x1(t))
+            push!(y,y1(t))
         else
-            push!(x,x3(t))
-            push!(y,y3(t))
+            push!(x,x1(t))
+            push!(y,y1(t))
         end
 
         cnt += 1
@@ -146,9 +144,8 @@ function instInputs(;theta = (pi/2)*.95 , velocity = 1.0 , mass = 1.0 , diameter
 
     global zeta = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
     global xi = c2*v0*cos(th)/(sqrt(2)*(c1+am*c2))
-    global Xi = imag(Bessel(xi,im*zeta))*real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))-real(Bessel(xi,im*zeta))*imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1))
-    global alpha = (imag(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))/Xi
-    global beta = (real(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))/Xi
+    global alpha = (imag(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))
+    global beta = (real(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))
 
     global pxi = xi*exp(-(c1+c2*am)*tau1/m)
     global var1 = (alpha*real(Bessel(pxi,im*zeta+1)-Bessel(pxi,im*zeta-1))-beta*imag(Bessel(pxi,im*zeta+1)-Bessel(pxi,im*zeta-1)))/(alpha*real(Bessel(pxi,im*zeta))-beta*imag(Bessel(pxi,im*zeta)))

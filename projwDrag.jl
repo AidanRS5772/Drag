@@ -17,7 +17,7 @@ function dragEq(a,b)
     return -(c1/m)*big(a)-(c2/m)*big(a)*sqrt(big(a)^2+big(b)^2)
 end
 
-function quadDragSim(dt = 10.0^-6)
+function quadDragSim(dt = 10.0^-7)
     time = 0
     cnt = 0
 
@@ -63,33 +63,20 @@ function quadDragSim(dt = 10.0^-6)
 end
 
 function y1(t)
-    arg1 = alpha*real(Bessel(xi*exp(-((c1+c2*am)/m)*t),im*zeta))
-    arg2 = beta*imag(Bessel(xi*exp(-((c1+c2*am)/m)*t),im*zeta))
-    return -(c1*big(t)/(2*c2))+(m/c2)*log(arg1-arg2)+(m/c2)*log(π*xi/(2*sinh(π*zeta)))
+    arg1 = α*real(Bessel(ξ*exp(-((c1+c2*am)/m)*t),im*ζ))
+    arg2 = β*imag(Bessel(ξ*exp(-((c1+c2*am)/m)*t),im*ζ))
+    return -(c1*big(t)/(2*c2))+(m/c2)*log(arg1-arg2)+(m/c2)*log(π*ξ/(2*sinh(π*ζ)))
 end
 
 function x1(t)
-    return (sqrt(2)*m*xi/c2)*(1-exp(-(c1+c2*am)*t/m))
+    return (sqrt(2)*m*ξ/c2)*(1-exp(-(c1+c2*am)*t/m))
 end
 
 function y2(t)
-    return -lam1*(m/c1)*exp(-c1*big(t)/m)-g*m*big(t)/c1+lam2
+    arg1 = ν*Bessel(ψ*exp(-(c1-c2*ap)*t/m),-Ω)
+    arg2 = μ*Bessel(ψ*exp(-(c1-c2*ap)*t/m),Ω)
+    return c1*t/(c2*2)-(m/c2)*log(arg1-arg2)+am*τ*log(sinh(π*ζ)*(c1+c2*am)/(2*sin(π*Ω)*(c1-c2*ap)))
 end
-
-function x2(t)
-    return -del1*(m/c1)*exp(-c1*t/m)+del2
-end
-
-function y3(t)
-    arg1 = mu*Bessel(psi*exp(-(c1-c2*ap)*t/m),omega)
-    arg2 = nu*Bessel(psi*exp(-(c1-c2*ap)*t/m),-omega)
-    return c1*big(t)/(2*c2)-(m/c2)*log(arg1-arg2)+(m/c2)*(log(Psi)-Lam)
-end
-
-function x3(t)
-    return -m*chi3/(c1-c2*ap)*exp(-(c1-c2*ap)*t/m)+d
-end
-
 function quadDragAprox(T)
     x = []
     y = []
@@ -97,17 +84,14 @@ function quadDragAprox(T)
     cnt = 0
     n = length(T)
     for t in T
-        if t < tau1
-            push!(x,x1(t))
-            push!(y,y1(t))
-        elseif (t > tau1) && (t < tau2)
+        if t < tau
             push!(x,x1(t))
             push!(y,y1(t))
         else
             push!(x,x1(t))
-            push!(y,y1(t))
+            push!(y,y2(t))
         end
-
+        
         cnt += 1
         if floor(Int,100*cnt/n) > track
             track += 1
@@ -131,39 +115,26 @@ function instInputs(;theta = (pi/2)*.95 , velocity = 1.0 , mass = 1.0 , diameter
     global c1 = linC*D
     global c2 = quadC*D^2
 
-    #free parameters
-    global ep1 = .05
-    global ep2 = .05
+    global ep = .05
 
     tp = quadDragSim(.0001)[5]
-    global tau1 = tp - ep1
-    global tau2 = tp + ep2
+    global τ = tp + ep
 
     #free paremter
     global am = v0*sin(th)
 
-    global zeta = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
-    global xi = c2*v0*cos(th)/(sqrt(2)*(c1+am*c2))
-    global alpha = (imag(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-imag(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))
-    global beta = (real(Bessel(xi,im*zeta))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-real(Bessel(xi,im*zeta+1)-Bessel(xi,im*zeta-1)))
+    global ζ = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
+    global ξ = c2*v0*cos(th)/(sqrt(2)*(c1+am*c2))
+    global α = imag(Bessel(ξ,im*ζ))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-imag(Bessel(ξ,im*ζ+1)-Bessel(ξ,im*ζ-1))
+    global β = real(Bessel(ξ,im*ζ))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-real(Bessel(ξ,im*ζ+1)-Bessel(ξ,im*ζ-1))
 
-    global pxi = xi*exp(-(c1+c2*am)*tau1/m)
-    global var1 = (alpha*real(Bessel(pxi,im*zeta+1)-Bessel(pxi,im*zeta-1))-beta*imag(Bessel(pxi,im*zeta+1)-Bessel(pxi,im*zeta-1)))/(alpha*real(Bessel(pxi,im*zeta))-beta*imag(Bessel(pxi,im*zeta)))
-    global del1 = v0*cos(th)*exp(-c2*am*tau1/m)
-    global del2 = m*v0*cos(th)*(1/(c1+c2*am)+exp(-(c1+c2*am)*tau1/m)*(1/c1-1/(c1+c2*am)))
-    global lam1 = (g*m/c1-c1/(2*c2))*exp(c1*tau1/m)+(v0*cos(th)/(2*sqrt(2)))*exp(-c2*am*tau1/m)*var1
-    global lam2 = (g*m/c1-c1/(2*c2))*(tau1+m/c1)+(m*v0*cos(th)/(2*sqrt(2)*c1))*exp(-(c1+c2*am)*tau1/m)*var1+(m/c2)*log(alpha*real(Bessel(pxi,im*zeta))-beta*imag(Bessel(pxi,im*zeta)))
-
-    #free parameter
-    global ap = lam1*exp(-c1*tau2/m)-g*m/c1
-
-    global omega = sqrt(c2*g*m+c1^2/4)/(c1-c2*ap)
-    global chi3 = del1*exp(-c2*ap*tau2/m)
-    global d = m*del1*exp(-c1*tau2/m)*(1/(c1-c2*ap)-1/c1)+del2
-    global psi = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(c2/m)*(am*tau1+ap*tau2))
-    global ppsi = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(c1*tau2+c2*am*tau1)/m)
-    global Psi = Bessel(ppsi,-omega)*(Bessel(ppsi,omega+1)-Bessel(ppsi,omega-1))-Bessel(ppsi,omega)*(Bessel(ppsi,-omega+1)-Bessel(ppsi,-omega-1))
-    global Lam = (lam1*c2/c1)*exp(-c1*tau2/m)+(g*c2/c1+c1/(2*m))tau2-c2*lam2/m
-    global mu = Bessel(ppsi,-omega)*(c1/(2*c2)+g*m/c1-lam1*exp(-c1*tau2/m))*(2*c2/((c1-c2*ap)*psi))-Bessel(ppsi,-omega+1)+Bessel(ppsi,-omega-1)
-    global nu = Bessel(ppsi,omega)*(c1/(2*c2)+g*m/c1-lam1*exp(-c1*tau2/m))*(2*c2/((c1-c2*ap)*psi))-Bessel(ppsi,omega+1)+Bessel(ppsi,omega-1)
+    global ap = (y1(tau+eps(Float64))-y1(tau-eps(Float64)))/(2*eps(Float64))
+    
+    global Ω  = sqrt(c2*g*m+(c1^2)/4)/(c1-c2*ap)
+    global ψ = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(ap+am)*c2*τ/m)
+    global pψ = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(c1+c2*am)*τ/m)
+    global pξ = (c2*v0*cos(th)/(sqrt(2)*(c1+c2*am)))*exp(-(c1+c2*am)*τ/m)
+    global Δ = (α*real(Bessel(pξ,im*ζ+1)-Bessel(pξ,im*ζ-1))-β*imag(Bessel(pξ,im*ζ+1)-Bessel(pξ,im*ζ-1)))/(α*real(Bessel(pξ,im*ζ))-β*imag(Bessel(pξ,im*ζ)))
+    global μ = Bessel(pψ,-Ω)*((2*sqrt(2)*c1/(c2*v0))*sec(th)*exp((c1+c2*am)*τ/m) + Δ)+Bessel(pψ,-Ω-1)-Bessel(pψ,-Ω+1)
+    global ν = Bessel(pψ,Ω)*((2*sqrt(2)*c1/(c2*v0))*sec(th)*exp((c1+c2*am)*τ/m) + Δ)+Bessel(pψ,Ω-1)-Bessel(pψ,Ω+1)
 end

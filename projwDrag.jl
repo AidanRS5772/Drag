@@ -17,7 +17,7 @@ function dragEq(a,b)
     return -(c1/m)*big(a)-(c2/m)*big(a)*sqrt(big(a)^2+big(b)^2)
 end
 
-function quadDragSim(dt = 10.0^-7)
+function quadDragSim(dt = 10.0^-6)
     time = 0
     cnt = 0
 
@@ -84,7 +84,7 @@ function quadDragAprox(T)
     cnt = 0
     n = length(T)
     for t in T
-        if t < tau
+        if t < τ
             push!(x,x1(t))
             push!(y,y1(t))
         else
@@ -115,7 +115,7 @@ function instInputs(;theta = (pi/2)*.95 , velocity = 1.0 , mass = 1.0 , diameter
     global c1 = linC*D
     global c2 = quadC*D^2
 
-    global ep = .05
+    global ep = .11
 
     tp = quadDragSim(.0001)[5]
     global τ = tp + ep
@@ -128,7 +128,7 @@ function instInputs(;theta = (pi/2)*.95 , velocity = 1.0 , mass = 1.0 , diameter
     global α = imag(Bessel(ξ,im*ζ))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-imag(Bessel(ξ,im*ζ+1)-Bessel(ξ,im*ζ-1))
     global β = real(Bessel(ξ,im*ζ))*(2*sqrt(2)*tan(th)+(c1*sqrt(2)/(v0*c2))*sec(th))-real(Bessel(ξ,im*ζ+1)-Bessel(ξ,im*ζ-1))
 
-    global ap = (y1(tau+eps(Float64))-y1(tau-eps(Float64)))/(2*eps(Float64))
+    global ap = (y1(τ+eps(Float64))-y1(τ-eps(Float64)))/(2*eps(Float64))
     
     global Ω  = sqrt(c2*g*m+(c1^2)/4)/(c1-c2*ap)
     global ψ = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(ap+am)*c2*τ/m)

@@ -54,7 +54,7 @@ function manyErrorPlots(N,b,cutOff)
     return plot(error...,layout = (2,N))
 end
 
-function plotProj(;dt = 10.0^-4)
+function plotProj(;dt = 10.0^-3)
 
     sim = quadDragSim()
 

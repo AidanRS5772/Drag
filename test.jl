@@ -10,3 +10,6 @@ p1 = plot(s1)
 p2 = plot(s2)
 p3 = plot(s3)
 [p1 p2 p3]
+
+
+

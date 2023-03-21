@@ -104,7 +104,6 @@ function recFunc(f::Function)
     return x -> 1 / f(x)
 end
 
-
 function besselCoef(z, x, n)
     if n <= 20
         out = (1 / (gamma(z + n + 1) * factorial(n))) * (x / 2)^(2 * n)
@@ -452,9 +451,5 @@ function preCalc(;print = true)
         global t4 = secantRF(r4 , t3)
         if print println("t4 = " , t4 , "\n") end
         d5Vals(x4(t4) , y4(t4) , vx4(t4) , track = print)
-
-        global t1 = 0
-        global t2 = 0
     end
-    
 end

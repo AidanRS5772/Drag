@@ -83,7 +83,7 @@ end
 function y3(t)
     arg1 = mu*Bessel(psi*exp(-(c1-c2*ap)*t/m),omega)
     arg2 = nu*Bessel(psi*exp(-(c1-c2*ap)*t/m),-omega)
-    return c1*big(t)/(2*c2)-(m/c2)*log(arg1-arg2)+(m/c2)*(log(Psi)-Lam)
+    return c1*big(t)/(2*c2)-(m/c2)*log(-arg1+arg2)+(m/c2)*(log(Psi)-Lam)
 end
 
 function x3(t)
@@ -101,11 +101,11 @@ function quadDragAprox(T)
             push!(x,x1(t))
             push!(y,y1(t))
         elseif (t > tau1) && (t < tau2)
-            push!(x,x1(t))
-            push!(y,y1(t))
+            push!(x,x2(t))
+            push!(y,y2(t))
         else
-            push!(x,x1(t))
-            push!(y,y1(t))
+            push!(x,x3(t))
+            push!(y,y3(t))
         end
 
         cnt += 1
@@ -132,8 +132,8 @@ function instInputs(;theta = (pi/2)*.95 , velocity = 1.0 , mass = 1.0 , diameter
     global c2 = quadC*D^2
 
     #free parameters
-    global ep1 = .05
-    global ep2 = .05
+    global ep1 = .01
+    global ep2 = .01
 
     tp = quadDragSim(.0001)[5]
     global tau1 = tp - ep1
@@ -162,7 +162,7 @@ function instInputs(;theta = (pi/2)*.95 , velocity = 1.0 , mass = 1.0 , diameter
     global d = m*del1*exp(-c1*tau2/m)*(1/(c1-c2*ap)-1/c1)+del2
     global psi = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(c2/m)*(am*tau1+ap*tau2))
     global ppsi = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(c1*tau2+c2*am*tau1)/m)
-    global Psi = Bessel(ppsi,-omega)*(Bessel(ppsi,omega+1)-Bessel(ppsi,omega-1))-Bessel(ppsi,omega)*(Bessel(ppsi,-omega+1)-Bessel(ppsi,-omega-1))
+    global Psi = -Bessel(ppsi,-omega)*(Bessel(ppsi,omega+1)-Bessel(ppsi,omega-1))+Bessel(ppsi,omega)*(Bessel(ppsi,-omega+1)-Bessel(ppsi,-omega-1))
     global Lam = (lam1*c2/c1)*exp(-c1*tau2/m)+(g*c2/c1+c1/(2*m))tau2-c2*lam2/m
     global mu = Bessel(ppsi,-omega)*(c1/(2*c2)+g*m/c1-lam1*exp(-c1*tau2/m))*(2*c2/((c1-c2*ap)*psi))-Bessel(ppsi,-omega+1)+Bessel(ppsi,-omega-1)
     global nu = Bessel(ppsi,omega)*(c1/(2*c2)+g*m/c1-lam1*exp(-c1*tau2/m))*(2*c2/((c1-c2*ap)*psi))-Bessel(ppsi,omega+1)+Bessel(ppsi,omega-1)

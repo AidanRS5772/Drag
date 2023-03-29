@@ -17,7 +17,7 @@ function dragEq(a,b)
     return -(c1/m)*big(a)-(c2/m)*big(a)*sqrt(big(a)^2+big(b)^2)
 end
 
-function quadDragSim(dt = 10.0^-6)
+function quadDragSim(;dt = 10.0^-6)
     time = 0
     cnt = 0
 
@@ -133,9 +133,9 @@ function instInputs(;theta = (pi/2)*.95 , velocity = 1.0 , mass = 1.0 , diameter
 
     #free parameters
     global ep1 = .01
-    global ep2 = .01
+    global ep2 = .1
 
-    tp = quadDragSim(.0001)[5]
+    tp = quadDragSim(dt = .0001)[5]
     global tau1 = tp - ep1
     global tau2 = tp + ep2
 

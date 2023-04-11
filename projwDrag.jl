@@ -1,7 +1,6 @@
 using SpecialFunctions
 using Printf
 
-#=
 function Bessel(x,z)
     sum = 0
     n=100
@@ -10,7 +9,6 @@ function Bessel(x,z)
     end
     return sum
 end
-=#
 
 function dragEq(a,b)
     #put as the first entry the variable you want the equation to be repersenting this 
@@ -18,15 +16,15 @@ function dragEq(a,b)
     return -(c1/m)*big(a)-(c2/m)*big(a)*sqrt(big(a)^2+big(b)^2)
 end
 
-function quadDragSim(dt = 10.0^-6)
+function quadDragSim(;dt = 10.0^-4)
     time = 0
     cnt = 0
 
     y = []
     x = []
 
-    vy=v0*sin(th)
-    vx=v0*cos(th)
+    vy=v0*sin(θ)
+    vx=v0*cos(θ)
 
     ny = 0
     nx = 0
@@ -63,41 +61,33 @@ function quadDragSim(dt = 10.0^-6)
     return x , y , time , cnt , ymaxi*time/cnt
 end
 
-f(x,k) = x^3-(x^2)*(2*k+σ2)+x*(k^2+k*(σ2-1)-2)+(σ2+k)*(k+1)-1
-
-function product(l)
-    prod = 1
-    for r in 1:l+1
-        prod *= 1/(r^2+ζ^2)
-    end
-    return prod
-end
- 
-function fFac(z,k)
-    prod = 1
-    for r in 0:k+1
-        prod *= z+1-r
-    end
-    return prod
-end
 
 function y1Sum(t)
+    am = v0*sin(θ)
+    ζ = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
+    ξ = c2*v0*cos(θ)/(sqrt(2)*(c1+am*c2))
+    ψ = 2*sqrt(2)*tan(θ)+c2*sqrt(2)*sec(θ)/(v0*c2)
+    χ = (c1+c2*am)/m
     sum1 = 0 
     n = 20
     for k in 0:n
         sum2 = 0
         for l in 0:k
-            prod1 = product(l)
-            prod2 = product(k-1)
-            diff = cos(σ3*t)*imag(f(l+im*ζ,k)*fFac(l-im*ζ,k))-sin(σ3*t)*real(f(l-im*ζ,k)*fFac(l+im*ζ,k))
-            sum2 += ((-1)^l)*(exp(-2*l*σ1*t)/(factorial(k-l)*factorial(l)))*prod1*prod2*diff
+            prod = 1
+            for r in 0:k
+                prod *= 1/(l-r+im*ζ)
+            end
+            term = real(cis(ζ*χ*t)*(ψ+2(l+im*ζ)/ξ-ξ/(2(l+im*ζ+1)))*prod)
+            #t1 = cos(ζ*(c1+c2*am)*t/m)*real((ψ+2(l+im*ζ)/ξ-ξ/(2(l+im*ζ+1)))*prod)
+            #t2 = sin(ζ*(c1+c2*am)*t/m)*imag((ψ+2(l+im*ζ)/ξ-ξ/(2(l+im*ζ+1)))*prod)
+            sum2 += ((-1)^l)*exp(2*l*χ*t)*term/(factorial(k-l)*factorial(l))
         end
-        sum1 += ((ξ/4)^(k+1))*sum2
+        sum1 += exp(-2*k*χ*t)*((ξ/2)^(2*k+1))*sum2
     end
     return sum1
 end
 
-y1(t) = -(c1/(2*c2))*t+(m/c2)*log(y1Sum(t))+(m/c2)*log(2/ζ^2)
+y1(t) = -(c1/(2*c2))*t+(m/c2)*log(y1Sum(t))
 
 function x1(t)
     return (sqrt(2)*m*ξ/c2)*(1-exp(-(c1+c2*am)*t/m))
@@ -143,18 +133,8 @@ function instInputs(;theta = (pi/2)*.95 , velocity = 1.0 , mass = 1.0 , diameter
 
     global ep = .1
 
-    tp = quadDragSim(.0001)[5]
+    tp = quadDragSim(dt = .0001)[5]
     global τ = tp + ep
-
-    #free paremter
-    global am = v0*sin(th)
-
-    global ζ = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
-    global ξ = c2*v0*cos(th)/(sqrt(2)*(c1+am*c2))
-    global σ1 = (c1+c2*v0)/m
-    global σ2 = 2*sqrt(2)*tan(θ)+c2*sqrt(2)*sec(θ)/(v0*c2)
-    global σ3 = sqrt(c2*g/m-(c1/(2*m))^2)
-    
 
     #=
     global ap = (y1(τ+eps(Float64))-y1(τ-eps(Float64)))/(2*eps(Float64))

@@ -4,7 +4,7 @@ using Printf
 
 include("projwDrag.jl")
 
-function plotError(;dt = 10^-4,cutOff = .05)
+function plotError(;dt = 10^-3,cutOff = .05)
 
     sim = quadDragSim()
 
@@ -15,27 +15,31 @@ function plotError(;dt = 10^-4,cutOff = .05)
 
     t = LinRange(0,time,floor(Int,time/dt))
     aprox = quadDragAprox(t)
-    aproxX = convert.(Float64 , aprox[1])
-    aproxY = convert.(Float64 , aprox[2])
+    aproxX = convert.(Float64,aprox[1])
+    aproxY = convert.(Float64,aprox[2])
 
+    
     splineX = CubicSplineInterpolation(t, aproxX)
     splineY = CubicSplineInterpolation(t, aproxY)
-    splineT = big.(collect(LinRange(0,time,cnt)))
-    linAproxX = big.(collect(splineX(splineT)))
-    linAproxY = big.(collect(splineY(splineT)))
+    splineT = collect(LinRange(0,time,cnt))
 
-    abserrorX = abs.(simX .- linAproxX)
-    abserrorY = abs.(simY .- linAproxY)
+    aproxX = collect(splineX(splineT))
+    aproxY = collect(splineY(splineT))
+
+    abserrorX = abs.(simX .- aproxX)
+    abserrorY = abs.(simY .- aproxY)
+
     relerrorX = abserrorX./simX
     relerrorY = abserrorY./simY
-    relT = collect(splineT)
+    relT = splineT
 
     nrelerrorX = relerrorX[floor(Int,cnt*cutOff):floor(Int,cnt*(1-cutOff))]
     nrelerrorY = relerrorY[floor(Int,cnt*cutOff):floor(Int,cnt*(1-cutOff))]
     nrelT = relT[floor(Int,cnt*cutOff):floor(Int,cnt*(1-cutOff))]
-
-    ep1 = plot(splineT,[abserrorX abserrorY],legend = false)
-    ep2 = plot(nrelT,[nrelerrorX nrelerrorY],legend = false)
+    
+    println("Done")
+    ep1 = plot(splineT,abserrorY)
+    ep2 = plot(nrelT,nrelerrorY)
     return ep1 , ep2
 end
 
@@ -56,7 +60,7 @@ end
 
 function plotProj(;dt = 10.0^-3)
 
-    sim = quadDragSim()
+    sim = quadDragSim(dt = 10^-6)
 
     simX = sim[1]
     simY = sim[2]

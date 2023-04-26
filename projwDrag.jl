@@ -1,30 +1,25 @@
 using SpecialFunctions
 using Printf
 
-function Bessel(x,z)
-    sum = 0
-    n=100
-    for i in 0:n
-        sum+= (((-1)^i)/(factorial(big(i))*gamma(z+i+1)))*(x/2)^(2*i+z)
-    end
-    return sum
-end
-
 function dragEq(a,b)
-    #put as the first entry the variable you want the equation to be repersenting this 
+    #put as the first entry the variable you want the equation to be repersenting, this 
     #does not include the inhomogeneous part of the y equation'
-    return -(c1/m)*big(a)-(c2/m)*big(a)*sqrt(big(a)^2+big(b)^2)
+    return -(c1/m)*a-(c2/m)*a*sqrt(a^2+b^2)
 end
 
-function quadDragSim(;dt = 10.0^-4)
+function quadDragSim(;dt = 10.0^-6,track = true)
+    if track
+        println("\nSimulation:\n")
+    end
+
     time = 0
     cnt = 0
-
+    tp = 0
     y = []
     x = []
 
-    vy=v0*sin(θ)
-    vx=v0*cos(θ)
+    vy=v0*sinpi(θ/2)
+    vx=v0*cospi(θ/2)
 
     ny = 0
     nx = 0
@@ -33,6 +28,13 @@ function quadDragSim(;dt = 10.0^-4)
 
         time += dt
         cnt += 1
+
+        if floor(Int,time*1000)>tp
+            tp += 1
+            if track
+                println("$(tp) ms")
+            end
+        end
 
         push!(x,nx)
         push!(y,ny)
@@ -58,40 +60,49 @@ function quadDragSim(;dt = 10.0^-4)
 
     ymaxi = findmax(y)[2]
 
-    return x , y , time , cnt , ymaxi*time/cnt
+    return x , y , time , cnt , ymaxi*time/cnt , dt
 end
 
-
-function y1Sum(t)
-    am = v0*sin(θ)
-    ζ = sqrt(c2*g*m-(c1^2)/4)/(c1+c2*am)
-    ξ = c2*v0*cos(θ)/(sqrt(2)*(c1+am*c2))
-    ψ = 2*sqrt(2)*tan(θ)+c2*sqrt(2)*sec(θ)/(v0*c2)
-    χ = (c1+c2*am)/m
-    sum1 = 0 
-    n = 20
-    for k in 0:n
-        sum2 = 0
-        for l in 0:k
-            prod = 1
-            for r in 0:k
-                prod *= 1/(l-r+im*ζ)
-            end
-            term = real(cis(ζ*χ*t)*(ψ+2(l+im*ζ)/ξ-ξ/(2(l+im*ζ+1)))*prod)
-            #t1 = cos(ζ*(c1+c2*am)*t/m)*real((ψ+2(l+im*ζ)/ξ-ξ/(2(l+im*ζ+1)))*prod)
-            #t2 = sin(ζ*(c1+c2*am)*t/m)*imag((ψ+2(l+im*ζ)/ξ-ξ/(2(l+im*ζ+1)))*prod)
-            sum2 += ((-1)^l)*exp(2*l*χ*t)*term/(factorial(k-l)*factorial(l))
-        end
-        sum1 += exp(-2*k*χ*t)*((ξ/2)^(2*k+1))*sum2
+function BesselIm(x,z)
+    sum = 0
+    n=20
+    for i in 0:n
+        sum+= (((-1)^i)/(factorial(i)*gamma(i+z+1)))*(x/2)^(2*i)
     end
-    return sum1
+    return ((x/2)^z)*sum
 end
 
-y1(t) = -(c1/(2*c2))*t+(m/c2)*log(y1Sum(t))
-
-function x1(t)
-    return (sqrt(2)*m*ξ/c2)*(1-exp(-(c1+c2*am)*t/m))
+function BesselRe(x,z)
+    sum = 0
+    n=20
+    for i in 0:n
+        if i+z+1 >= 0
+            g = gamma(big(i+z+1))
+        else
+            g = (-1)^(i)*π/(sinpi(z)*gamma(-big(z+i)))
+        end
+        sum+= (((-1)^i)/(factorial(i)*g))*(x/2)^(2*i)
+    end
+    return ((big(x)/2)^z)*sum
 end
+
+function nx1(t)
+    sum = 0
+    for n in 0:20
+        term1 = (ξm/2)^(im*ζ)*conj(k)/((2*n+im*ζ+σ/ωm)*gamma(im*ζ+n+1))
+        term2 = imag(term1)-exp(-(σ+2*n*ωm)*t)*imag(cis(-ζ*ωm*t)*term1)
+        sum += term2*((-1)^n)*(ξm^(2*n))/(factorial(n)*4^n)
+    end
+     
+    mult = v0*sinpi(θ/2)/(imag(conj(k)*BesselIm(ξm,im*ζ))*ωm)
+    return mult*sum
+end
+
+x1(t) = (v0*cospi(θ/2)/ωm)*(1-exp(-ωm*t))
+y1(t) = -(c1/(2*c2))*t+(m/c2)*log(-imag(conj(k)*BesselIm(ξm*exp(-ωm*t),im*ζ)))+(m/c2)*log(Ξ1)
+
+x2(t) = -(v0*cospi(θ/2)/ωp)*exp((ωp-ωm)*τ)*exp(-ωp*t)+v0*cospi(θ/2)*((1/ωp-1/ωm)*exp(-ωm*τ)+1/ωm)
+y2(t) = (c1/(2*c2))*t-(m/c2)*log(-l1*BesselRe(ξp*exp(-ωp*t),Ω)+l2*BesselRe(ξp*exp(-ωp*t),-Ω))
 
 function quadDragAprox(T)
     x = []
@@ -104,21 +115,22 @@ function quadDragAprox(T)
             push!(x,x1(t))
             push!(y,y1(t))
         else
-            push!(x,x1(t))
-            push!(y,y1(t))
+            push!(x,x2(t))
+            push!(y,y2(t))
         end
-        
+
         cnt += 1
         if floor(Int,100*cnt/n) > track
             track += 1
             @printf("%.f%% \n",100*cnt/n)
         end
+    
     end
 
     return x , y
 end
 
-function instInputs(;theta = (pi/2)*.95 , velocity = 1.0 , mass = 1.0 , diameter = .05)
+function instInputs(;theta = .95 , velocity = 1.0 , mass = .1 , diameter = .05)
     #input values
     global θ = theta
     global v0 = velocity
@@ -131,20 +143,28 @@ function instInputs(;theta = (pi/2)*.95 , velocity = 1.0 , mass = 1.0 , diameter
     global c1 = linC*D
     global c2 = quadC*D^2
 
-    global ep = .1
-
-    tp = quadDragSim(dt = .0001)[5]
+    simData = quadDragSim(dt = .0001,track = false)
+    tp = simData[5]
+    ep = simData[3]*10^-3
+    cnt = simData[4]
+    dt = simData[6]
     global τ = tp + ep
 
-    #=
-    global ap = (y1(τ+eps(Float64))-y1(τ-eps(Float64)))/(2*eps(Float64))
-    
-    global Ω  = sqrt(c2*g*m+(c1^2)/4)/(c1-c2*ap)
-    global ψ = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(ap+am)*c2*τ/m)
-    global pψ = (c2*v0*cos(th)/(sqrt(2)*(c1-c2*ap)))*exp(-(c1+c2*am)*τ/m)
-    global pξ = (c2*v0*cos(th)/(sqrt(2)*(c1+c2*am)))*exp(-(c1+c2*am)*τ/m)
-    global Δ = (α*real(Bessel(pξ,im*ζ+1)-Bessel(pξ,im*ζ-1))-β*imag(Bessel(pξ,im*ζ+1)-Bessel(pξ,im*ζ-1)))/(α*real(Bessel(pξ,im*ζ))-β*imag(Bessel(pξ,im*ζ)))
-    global μ = Bessel(pψ,-Ω)*((2*sqrt(2)*c1/(c2*v0))*sec(th)*exp((c1+c2*am)*τ/m) + Δ)+Bessel(pψ,-Ω-1)-Bessel(pψ,-Ω+1)
-    global ν = Bessel(pψ,Ω)*((2*sqrt(2)*c1/(c2*v0))*sec(th)*exp((c1+c2*am)*τ/m) + Δ)+Bessel(pψ,Ω-1)-Bessel(pψ,Ω+1)
-    =#
+    global am = v0*sinpi(θ/2)
+    global ap = (simData[2][floor(Int,τ/dt)+1]-simData[2][floor(Int,τ/dt)-1])/(2*dt)
+
+    global ζ = sqrt(c2*g*m-(c1/2)^2)/(c1+c2*am)
+    global ξm = c2*v0*cospi(θ/2)/(sqrt(2)*(c1+c2*am))
+    global ωm = (c1+c2*am)/m
+    global σ = 3*c1/(2*m)
+    global k =  BesselIm(ξm,im*ζ)*((2*c2*v0*sinpi(θ/2)+c1)/(m*ξm*ωm))+BesselIm(ξm,im*ζ-1)-BesselIm(ξm,im*ζ+1)
+    global Ξ1 = π*ξm/(2*sinh(π*ζ))
+
+    global Ω = sqrt(c2*g*m+(c1/2)^2)/(c1-c2*ap)
+    global ωp = (c1-c2*ap)/m
+    global ξp = c2*v0*cospi(θ/2)*exp((ωp-ωm)*τ)/(sqrt(2)*(c1-c2*ap))
+    global Λ = (2*c1*exp(ωm*τ)/(m*ωp*ξp))+exp((ωp-ωm)*τ)*(ωm*ξm/(ωp*ξp))*(imag(conj(k)*(BesselIm(ξm*exp(-ωm*τ),im*ζ-1)-BesselIm(ξm*exp(-ωm*τ),im*ζ+1)))/imag(conj(k)*(BesselIm(ξm*exp(-ωm*τ),im*ζ))))
+    global Ξ2 = π*ξp*exp((c1/m-ωp)*τ)/(4*sinpi(Ω)*Ξ1*imag(conj(k)*BesselIm(ξm*exp(-ωm*τ),im*ζ)))
+    global l1 = (BesselRe(ξp*exp(-ωp*τ),-Ω)*Λ+BesselRe(ξp*exp(-ωp*τ),-Ω-1)-BesselRe(ξp*exp(-ωp*τ),-Ω+1))*Ξ2
+    global l2 = (BesselRe(ξp*exp(-ωp*τ),Ω)*Λ+BesselRe(ξp*exp(-ωp*τ),Ω-1)-BesselRe(ξp*exp(-ωp*τ),Ω+1))*Ξ2
 end

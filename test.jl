@@ -4,6 +4,5 @@ using TickTock
 include("projwDrag.jl")
 include("plotProjDrag.jl")
 
-instInputs()
+instInputs(velocity = 10 , diameter = .5)
 display(plotProj())
-

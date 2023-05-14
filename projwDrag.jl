@@ -60,7 +60,7 @@ function quadDragSim(;dt = 10.0^-6,track = true)
 
     ymaxi = findmax(y)[2]
 
-    return x , y , time , cnt , ymaxi*time/cnt , dt
+    return x , y , time , cnt , dt
 end
 
 function BesselIm(x,z)
@@ -86,23 +86,25 @@ function BesselRe(x,z)
     return ((big(x)/2)^z)*sum
 end
 
-function nx1(t)
+function Whittaker(a,b,x)
     sum = 0
-    for n in 0:20
-        term1 = (ξm/2)^(im*ζ)*conj(k)/((2*n+im*ζ+σ/ωm)*gamma(im*ζ+n+1))
-        term2 = imag(term1)-exp(-(σ+2*n*ωm)*t)*imag(cis(-ζ*ωm*t)*term1)
-        sum += term2*((-1)^n)*(ξm^(2*n))/(factorial(n)*4^n)
+    n = 100
+    for i in 0:n
+        sum += (gamma(im*b-a+1/2+i)/gamma(2*im*b+1+i))*((im^i)*(x^i)/factorial(big(i)))
     end
-     
-    mult = v0*sinpi(θ/2)/(imag(conj(k)*BesselIm(ξm,im*ζ))*ωm)
-    return mult*sum
+    sum *= gamma(1+2*im*b)/gamma(im*b-a+1/2)
+    return exp(-π*b/2)*cis(-x/2)*((1+im)/sqrt(2))*cis(b*log(x))*sqrt(x)*sum
 end
 
-x1(t) = (v0*cospi(θ/2)/ωm)*(1-exp(-ωm*t))
-y1(t) = -(c1/(2*c2))*t+(m/c2)*log(-imag(conj(k)*BesselIm(ξm*exp(-ωm*t),im*ζ)))+(m/c2)*log(Ξ1)
+x1(t) = (v0*cos(θ)/ωp)*(1-exp(-ωp*t))
+y1(t) = -(c1/(2*c2))*t+(m/c2)*log(real(conj(k)*BesselIm(ξp*exp(-ωp*t),im*ζ)))
 
-x2(t) = -(v0*cospi(θ/2)/ωp)*exp((ωp-ωm)*τ)*exp(-ωp*t)+v0*cospi(θ/2)*((1/ωp-1/ωm)*exp(-ωm*τ)+1/ωm)
-y2(t) = (c1/(2*c2))*t-(m/c2)*log(-l1*BesselRe(ξp*exp(-ωp*t),Ω)+l2*BesselRe(ξp*exp(-ωp*t),-Ω))
+x2(t) = ((m*ω0-c1)/(2*c2))*t+(m/c2)*log(imag(conj(p)*Whittaker(im*κ,μ,ξ0*exp(-ω0*t))))
+y2(t) = ((q*v0*cos(θ)/ω0)*exp(-ωp*τ1)+g/(ω0^2))*(1-exp(-ω0*(t-τ1)))-(g/ω0)*(t-τ1)+y1(τ1)
+
+x3(t) = ((q*v0*cos(θ)/ωm)*exp(-ωp*τ1-ω0*(τ2-τ1))-g/(q*ω0*ωm)*(1-exp(-ω0*(τ2-τ1))))*(1-exp(-ωm*(t-τ2)))+x2(τ2)
+y3(t) = (c1/(2*c2))*t-(m/c2)*ln(lp*BesselRe(ξm*exp(-ωm*t),Ω)+lm*BesselRe(ξm*exp(-ωm*t),-Ω))
+
 
 function quadDragAprox(T)
     x = []
@@ -111,12 +113,15 @@ function quadDragAprox(T)
     cnt = 0
     n = length(T)
     for t in T
-        if t < τ
+        if t < τ1
             push!(x,x1(t))
             push!(y,y1(t))
-        else
+        elseif τ1 <= t < τ2
             push!(x,x2(t))
             push!(y,y2(t))
+        else
+            push!(x,x3(t))
+            push!(y,y3(t))
         end
 
         cnt += 1
@@ -143,28 +148,71 @@ function instInputs(;theta = .95 , velocity = 1.0 , mass = .1 , diameter = .05)
     global c1 = linC*D
     global c2 = quadC*D^2
 
-    simData = quadDragSim(dt = .0001,track = false)
-    tp = simData[5]
-    ep = simData[3]*10^-3
+    simData = quadDragSim(dt = .0001 , track =  false)
+    x = simData[1]
+    y = simData[2]
     cnt = simData[4]
-    dt = simData[6]
-    global τ = tp + ep
+    dt = simData[5]
 
-    global am = v0*sinpi(θ/2)
-    global ap = (simData[2][floor(Int,τ/dt)+1]-simData[2][floor(Int,τ/dt)-1])/(2*dt)
+    vy = []
+    vx = []
+    for i in 2:cnt-1
+        push!(vx,(x[i+1]-x[i-1])/(2*dt))
+        push!(vy,(y[i+1]-y[i-1])/(2*dt))
+    end
 
-    global ζ = sqrt(c2*g*m-(c1/2)^2)/(c1+c2*am)
-    global ξm = c2*v0*cospi(θ/2)/(sqrt(2)*(c1+c2*am))
-    global ωm = (c1+c2*am)/m
-    global σ = 3*c1/(2*m)
-    global k =  BesselIm(ξm,im*ζ)*((2*c2*v0*sinpi(θ/2)+c1)/(m*ξm*ωm))+BesselIm(ξm,im*ζ-1)-BesselIm(ξm,im*ζ+1)
-    global Ξ1 = π*ξm/(2*sinh(π*ζ))
+    q = .677269
 
-    global Ω = sqrt(c2*g*m+(c1/2)^2)/(c1-c2*ap)
-    global ωp = (c1-c2*ap)/m
-    global ξp = c2*v0*cospi(θ/2)*exp((ωp-ωm)*τ)/(sqrt(2)*(c1-c2*ap))
-    global Λ = (2*c1*exp(ωm*τ)/(m*ωp*ξp))+exp((ωp-ωm)*τ)*(ωm*ξm/(ωp*ξp))*(imag(conj(k)*(BesselIm(ξm*exp(-ωm*τ),im*ζ-1)-BesselIm(ξm*exp(-ωm*τ),im*ζ+1)))/imag(conj(k)*(BesselIm(ξm*exp(-ωm*τ),im*ζ))))
-    global Ξ2 = π*ξp*exp((c1/m-ωp)*τ)/(4*sinpi(Ω)*Ξ1*imag(conj(k)*BesselIm(ξm*exp(-ωm*τ),im*ζ)))
-    global l1 = (BesselRe(ξp*exp(-ωp*τ),-Ω)*Λ+BesselRe(ξp*exp(-ωp*τ),-Ω-1)-BesselRe(ξp*exp(-ωp*τ),-Ω+1))*Ξ2
-    global l2 = (BesselRe(ξp*exp(-ωp*τ),Ω)*Λ+BesselRe(ξp*exp(-ωp*τ),Ω-1)-BesselRe(ξp*exp(-ωp*τ),Ω+1))*Ξ2
+    vx = abs.(vx)
+    vy = abs.(vy)
+    velRatio = vy./vx
+
+    idx = findall(velRatio .<= q)
+    idx = idx.*dt
+
+    tau1 = idx[1]
+    tau2 = idx[end]
+
+    global omega_plus = (c1 + c2*v0*sin(theta))/m
+    global chi_plus = v0*cos(theta)
+    global xi_plus = (c2*chi_plus)/(sqrt(2)*omega_plus*m)
+    global zeta = (m/omega_plus)*sqrt(c2*g*m - (c1^2)/4)
+
+    global omega_0 = (c1/m) + (c2*chi_plus/m)*exp(-omega_plus*tau1)
+    global gammay = q*chi_plus*exp(-omega_plus*tau1) + g/omega_0
+    global xi_0 = (sqrt(2)*c2*gammay)/(m*omega_0)*exp(omega_0*tau1)
+    global kappa = (c2*g)/(sqrt(2)*m*omega_0^2)
+    global mu = sqrt(2*g^2*c2^2 - c1^2*omega_0^2)/(2*m*omega_0^2)
+
+    global chi_minus = (gammay/q)*exp(-omega_0*(tau2 - tau1)) - (g/(q*omega_0))
+    global omega_minus = (c1 - c2*q*chi_minus)/m
+    global xi_minus = (c2*chi_minus)/(sqrt(2)*omega_minus*m)*exp(omega_minus*tau2)
+    global Omega = sqrt(c2*g*m + (c1^2)/4)/(m*omega_minus)
+
+    #=
+    println("Drag Constants:")
+    println("c1 = ",c1)
+    println("c2 = ",c2)
+    println("tau1 = ",tau1)
+    println("tau2 = ",tau2)
+
+    println("\nPositive variables:")
+    println("omega_plus = ", omega_plus)
+    println("chi_plus = ", chi_plus)
+    println("xi_plus = ", xi_plus)
+    println("zeta = ", zeta)
+
+    println("\nZero variables:")
+    println("omega_0 = ", omega_0)
+    println("gammay = ", gammay)
+    println("xi_0 = ", xi_0)
+    println("kappa = ", kappa)
+    println("mu = ", mu)
+
+    println("\nNegative variables:")
+    println("omega_minus = ", omega_minus)
+    println("chi_minus = ", chi_minus)
+    println("xi_minus = ", xi_minus)
+    println("Omega = ", Omega)
+    =#
 end

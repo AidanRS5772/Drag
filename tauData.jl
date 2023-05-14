@@ -1,4 +1,5 @@
 using PlotlyJS
+using Printf
 include("projwDrag.jl")
 
 q = .67726947689135146269
@@ -16,6 +17,7 @@ t = LinRange(0,time,cnt)
 dx = []
 dy = []
 
+global track = 1
 for i in 2:cnt-1
     push!(dx,(xs[i+1]-xs[i-1])/(2*dt))
     push!(dy,(ys[i+1]-ys[i-1])/(2*dt))
@@ -23,10 +25,21 @@ end
 
 q = .677269
 
-xratio = findall(abs.(dx)/abs.(dy) .< q)
-yratio = findall(abs.(dy)/abs.(dx) .< q)
+xratio = findall(abs.(dx)./abs.(dy) .< q)
+yratio = findall(abs.(dy)./abs.(dx) .< q)
 
-t1 = yratio
+xratio = xratio.*dt
+yratio = yratio.*dt
+
+t1 = yratio[1]
+t2 = xratio[1]
+t3 = xratio[end]
+t4 = yratio[end]
+
+println(t1)
+println(t2)
+println(t3)
+println(t4)
 
 px = scatter(x = t,y = xs,mode = "line" , name = "x position")
 py = scatter(x = t,y = ys,mode = "line" , name = "y position")

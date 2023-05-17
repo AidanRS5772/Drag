@@ -1,4 +1,4 @@
-using Plots
+using PlotlyJS
 using Interpolations
 using Printf
 
@@ -60,17 +60,22 @@ end
 
 function plotProj(;dt = 10.0^-3)
 
-    sim = quadDragSim(dt = 10^-6)
+    sim = quadDragSim(dt = 10^-6 , track = false)
 
     simX = sim[1]
     simY = sim[2]
     time = sim[3]
+    cnt = sim[4]
+    ts = LinRange(0,time,cnt)
 
     t = LinRange(0,time,floor(Int,time/dt))
-    aprox = quadDragAprox(t)
+    aprox = quadDragAprox(t ; track = false)
     aproxX = aprox[1]
     aproxY = aprox[2]
 
-    p = plot(simX,simY,label = "Simulation")
-    return plot(p,aproxX,aproxY,label = "Aproximation")
+    psx = scatter(x=ts , y=simX , mode = "line" , name = "Simulation x")
+    psy = scatter(x=ts , y=simY , mode = "line" , name = "Simulation y")
+    pax = scatter(x = t , y=aproxX , mode = "line" , name = "Aproximation x")
+    pay = scatter(x = t , y=aproxY , mode = "line" , name = "Aproximation y")
+    return plot(pay)
 end

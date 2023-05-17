@@ -73,9 +73,7 @@ function plotProj(;dt = 10.0^-3)
     aproxX = aprox[1]
     aproxY = aprox[2]
 
-    psx = scatter(x=ts , y=simX , mode = "line" , name = "Simulation x")
-    psy = scatter(x=ts , y=simY , mode = "line" , name = "Simulation y")
-    pax = scatter(x = t , y=aproxX , mode = "line" , name = "Aproximation x")
-    pay = scatter(x = t , y=aproxY , mode = "line" , name = "Aproximation y")
-    return plot(pay)
+    ps = scatter(x=simX , y=simY , mode = "line" , name = "Simulation")
+    pa = scatter(x = aproxX , y=aproxY , mode = "line" , name = "Aproximation")
+    return plot([ps , pa])
 end

@@ -67,7 +67,7 @@ function BesselIm(x,z)
     sum = 0
     n=20
     for i in 0:n
-        sum+= (((-1)^i)/(factorial(i)*gamma(i+z+1)))*(x/2)^(2*i)
+        sum+= (((-1)^i)/((factorial(i))*gamma(i+z+1)))*(x/2)^(2*i)
     end
     return ((x/2)^z)*sum
 end
@@ -90,15 +90,17 @@ function Whittaker(a,b,x)
     sum = 0
     n = 20
     for i in 0:n
-        sum += (gamma(im*b-a+1/2+i)/gamma(2*im*b+1+i))*((im^i)*(x^i)/factorial(big(i)))
+        sum += (gamma(b-a+1/2+i)/gamma(2*b+1+i))*(x^i/factorial(i))
     end
-    sum *= gamma(1+2*im*b)/gamma(im*b-a+1/2)
-    return exp(-π*b/2)*cis(-x/2)*((1+im)/sqrt(2))*cis(b*log(x))*sqrt(x)*sum
+    sum *= gamma(1+2*b)/gamma(b-a+1/2)
+    return exp(-x/2)*(x^(b+1/2))*sum
 end
 
 x1(t) = (chi_p / omega_p)*(1-exp(-omega_p*t))
-y1(t) = -(c1/(2*c2))*t+(m/c2)*log(real(conj(k)*BesselIm(xi_p*exp(-omega_p*t),im*zeta)))
+y1(t) = -(c1/(2*c2))*t+(m/c2)*log(imag(conj(k)*BesselIm(xi_p*exp(-omega_p*t),im*zeta)))
 
+x2(t) = (2*m/(3*c2))*log(imag(conj(r)*Whittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*(t-t1)))))-(lambda_p/(2*phi_p))*(1-exp(-phi_p*(t-t1)))+(chi_p*(1/q+1)*exp(-omega_p*t1)/6+g/(2*phi_p))*(t-t1)-d_p/2
+y2(t) = (2*m/(3*c2))*log(imag(conj(r)*Whittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*(t-t1)))))+(lambda_p/(2*phi_p))*(1-exp(-phi_p*(t-t1)))+(chi_p*(1/q+1)*exp(-omega_p*t1)/6-g/(2*phi_p))*(t-t1)+d_p/2
 
 function quadDragAprox(T ; track = true)
     x = []
@@ -108,8 +110,13 @@ function quadDragAprox(T ; track = true)
     n = length(T)
     for t in T
         
-        push!(x,x1(t))
-        push!(y,y1(t))
+        if t < t1
+            push!(x,x1(t))
+            push!(y,y1(t))
+        else
+            push!(x,x2(t))
+            push!(y,y2(t))
+        end
 
         if track
             cnt += 1
@@ -149,13 +156,12 @@ function instInputs(;theta = .95 , velocity = 1.0 , mass = .1 , diameter = .05)
     dx = []
     dy = []
 
-    global track = 1
     for i in 2:cnt-1
         push!(dx,(xs[i+1]-xs[i-1])/(2*dt))
         push!(dy,(ys[i+1]-ys[i-1])/(2*dt))
     end
 
-    q = .677269
+    global q = .677269
 
     xratio = abs.(dx)./abs.(dy)
     yratio = abs.(dy)./abs.(dx)
@@ -176,15 +182,31 @@ function instInputs(;theta = .95 , velocity = 1.0 , mass = .1 , diameter = .05)
     global omega_p = (c1 + c2 * v0 * sinpi(θ/2)) / m
     global xi_p = (c2 * chi_p) / (sqrt(2) * omega_p * m)
     global zeta = sqrt(4*g*c2*m - c1^2) / (2*m*omega_p)
+    global k = -(π/(omega_p*sinh(π*zeta)))*(BesselIm(xi_p , im*zeta)*((c2*v0*sinpi(θ/2)/m)+(c1/(2*m))-im*zeta*omega_p)+xi_p*omega_p*BesselIm(xi_p,im*zeta-1))
 
-    global k = - (π*chi_p/(sinh(π*zeta)))*(BesselIm(xi_p , im*zeta)*((zeta/xi_p) + im*((2*c2*v0*sinpi(θ/2)+c1)/(2*m*xi_p*omega_p)))+im*BesselIm(xi_p,im*zeta-1))
+    global phi_p = (2*c1+c2*(1/q+1)*chi_p*exp(-omega_p*t1))/(2*m)
+    global lambda_p = chi_p*exp(-omega_p*t1)*(1/q-1)+g/phi_p
+    global eta_p = (3*c2*lambda_p)/(2*phi_p*m)
+    global d_p = y1(t1)-x1(t1)
+    global kappa_p = (3*c2*g)/(4*m*phi_p)
+    global mu_p = sqrt(12*c2*g*m*phi_p^2+9*(c2^2)*(g^2)-4*(c1^2)*(phi_p^2))/(4*m*(phi_p^2))
+    global Lambda_p = exp((3*c2/(4*m))*(y1(t1)+x1(t1)))
+    global r = -(exp(π*mu_p)*exp(phi_p*t1)*Lambda_p/(eta_p*mu_p))*(Whittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t1))*((c2*chi_p*(1+1/q)*exp(-omega_p*t1)/(2*m*phi_p))-im*(eta_p*exp(-phi_p*t1)/2-kappa_p))-(1/2+im*kappa_p+im*mu_p)*Whittaker(im*kappa_p+1,im*mu_p,im*eta_p*exp(-phi_p*t1)))
 
     println("c1: ",c1)
     println("c2: ",c2)
-
     println("chi_p: ",chi_p)
     println("omega_p: ",omega_p)
     println("xi_p: ",xi_p)
     println("zeta :",zeta)
     println("k: ",k)
+    println("phi_p = ", phi_p)
+    println("lambda_p = ", lambda_p)
+    println("eta_p = ", eta_p)
+    println("d_p = ", d_p)
+    println("kappa_p = ", kappa_p)
+    println("mu_p = ", mu_p)
+    println("Lambda_p = ", Lambda_p)
+    println("r = ", r)
+
 end

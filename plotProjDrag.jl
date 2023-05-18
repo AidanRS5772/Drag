@@ -65,8 +65,6 @@ function plotProj(;dt = 10.0^-3)
     simX = sim[1]
     simY = sim[2]
     time = sim[3]
-    cnt = sim[4]
-    ts = LinRange(0,time,cnt)
 
     t = LinRange(0,time,floor(Int,time/dt))
     aprox = quadDragAprox(t ; track = false)
@@ -75,5 +73,5 @@ function plotProj(;dt = 10.0^-3)
 
     ps = scatter(x=simX , y=simY , mode = "line" , name = "Simulation")
     pa = scatter(x = aproxX , y=aproxY , mode = "line" , name = "Aproximation")
-    return plot([ps , pa])
+    return [ps , pa]
 end

@@ -99,8 +99,8 @@ end
 x1(t) = (chi_p / omega_p)*(1-exp(-omega_p*t))
 y1(t) = -(c1/(2*c2))*t+(m/c2)*log(imag(conj(k)*BesselIm(xi_p*exp(-omega_p*t),im*zeta)))
 
-x2(t) = (2*m/(3*c2))*log(imag(conj(r)*Whittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*(t-t1)))))-(lambda_p/(2*phi_p))*(1-exp(-phi_p*(t-t1)))+(chi_p*(1/q+1)*exp(-omega_p*t1)/6+g/(2*phi_p))*(t-t1)-d_p/2
-y2(t) = (2*m/(3*c2))*log(imag(conj(r)*Whittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*(t-t1)))))+(lambda_p/(2*phi_p))*(1-exp(-phi_p*(t-t1)))+(chi_p*(1/q+1)*exp(-omega_p*t1)/6-g/(2*phi_p))*(t-t1)+d_p/2
+x2(t) = (2*m/(3*c2))*log(imag(conj(r)*Whittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*(t-t1)))))-(lambda_p/(2*phi_p))*(1-exp(-phi_p*(t-t1)))+(d_p0/6+g/(2*phi_p))*(t-t1) + d_p1
+y2(t) = (2*m/(3*c2))*log(imag(conj(r)*Whittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*(t-t1)))))+(lambda_p/(2*phi_p))*(1-exp(-phi_p*(t-t1)))+(d_p0/6-g/(2*phi_p))*(t-t1) + d_p2
 
 function quadDragAprox(T ; track = true)
     x = []
@@ -109,7 +109,6 @@ function quadDragAprox(T ; track = true)
     cnt = 0
     n = length(T)
     for t in T
-        
         if t < t1
             push!(x,x1(t))
             push!(y,y1(t))
@@ -141,8 +140,8 @@ function instInputs(;theta = .95 , velocity = 1.0 , mass = .1 , diameter = .05)
     global g = 9.8
     global linC = .00016
     global quadC = .25
-    global c1 = linC*D
-    global c2 = quadC*D^2
+    global c1 = 1
+    global c2 = 1
 
     simdata = quadDragSim(dt = .0001 , track = false)
     xs = simdata[1]
@@ -172,6 +171,8 @@ function instInputs(;theta = .95 , velocity = 1.0 , mass = .1 , diameter = .05)
     xratioq = xratioq.*dt
     yratioq = yratioq.*dt
 
+    h = 10^(-8)
+
     global t1 = xratioq[1]
     global t2 = yratioq[1]
     global t3 = yratioq[end]
@@ -184,29 +185,18 @@ function instInputs(;theta = .95 , velocity = 1.0 , mass = .1 , diameter = .05)
     global zeta = sqrt(4*g*c2*m - c1^2) / (2*m*omega_p)
     global k = -(π/(omega_p*sinh(π*zeta)))*(BesselIm(xi_p , im*zeta)*((c2*v0*sinpi(θ/2)/m)+(c1/(2*m))-im*zeta*omega_p)+xi_p*omega_p*BesselIm(xi_p,im*zeta-1))
 
-    global phi_p = (2*c1+c2*(1/q+1)*chi_p*exp(-omega_p*t1))/(2*m)
-    global lambda_p = chi_p*exp(-omega_p*t1)*(1/q-1)+g/phi_p
-    global eta_p = (3*c2*lambda_p)/(2*phi_p*m)
-    global d_p = y1(t1)-x1(t1)
-    global kappa_p = (3*c2*g)/(4*m*phi_p)
-    global mu_p = sqrt(12*c2*g*m*phi_p^2+9*(c2^2)*(g^2)-4*(c1^2)*(phi_p^2))/(4*m*(phi_p^2))
-    global Lambda_p = exp((3*c2/(4*m))*(y1(t1)+x1(t1)))
-    global r = -(exp(π*mu_p)*exp(phi_p*t1)*Lambda_p/(eta_p*mu_p))*(Whittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t1))*((c2*chi_p*(1+1/q)*exp(-omega_p*t1)/(2*m*phi_p))-im*(eta_p*exp(-phi_p*t1)/2-kappa_p))-(1/2+im*kappa_p+im*mu_p)*Whittaker(im*kappa_p+1,im*mu_p,im*eta_p*exp(-phi_p*t1)))
-
-    println("c1: ",c1)
-    println("c2: ",c2)
-    println("chi_p: ",chi_p)
-    println("omega_p: ",omega_p)
-    println("xi_p: ",xi_p)
-    println("zeta :",zeta)
-    println("k: ",k)
-    println("phi_p = ", phi_p)
-    println("lambda_p = ", lambda_p)
-    println("eta_p = ", eta_p)
-    println("d_p = ", d_p)
-    println("kappa_p = ", kappa_p)
-    println("mu_p = ", mu_p)
-    println("Lambda_p = ", Lambda_p)
-    println("r = ", r)
+    
+    println("c1 = ",c1)
+    println("c2 = ",c2)
+    println("t1 = ",t1)
+    println("t2 = ",t2)
+    println("t3 = ",t3)
+    println("t4 = ",t4)
+    println("chi_p = ",chi_p)
+    println("omega_p = ",omega_p)
+    println("xi_p = ",xi_p)
+    println("zeta = ",zeta)
+    println("k = ",k)
+    
 
 end

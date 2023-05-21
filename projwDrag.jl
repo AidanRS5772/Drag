@@ -63,44 +63,54 @@ function quadDragSim(;dt = 10.0^-6,track = true)
     return x , y , time , cnt , dt
 end
 
-function BesselIm(x,z)
+function lng(z)
+    m = 20
+    b = Array{Float64}(undef, m+1)
+    b[1] = 1.0
+    b[2] = -0.5
+    for n in 2:m
+        if n%2 == 0
+            local sum = 0
+            for k in 0:n-1
+                sum += (factorial(n)/(factorial(k)*factorial(n-k)))*(b[k+1]/(n-k+1))
+            end
+            b[n+1] = -sum
+        else
+            b[n+1] = 0
+        end
+    end
+    b = b[3:2:m+1]
+
+    sum = 0
+    for k in 1:10
+        sum += b[k]*z^(1-2*k)/((2*k)*(2*k-1))
+    end
+    return (z-1/2)*(log(z))-z+(1/2)*log(2*π)+sum
+end
+
+function Bessel(x,z)
     sum = 0
     n=20
     for i in 0:n
-        sum+= (((-1)^i)/((factorial(i))*gamma(i+z+1)))*(x/2)^(2*i)
+        sum+= (((-1)^i)/(gamma(i+z+1)*factorial(i)))*(x/2)^(2*i)
     end
     return ((x/2)^z)*sum
 end
 
-function BesselRe(x,z)
+function F11(a,b,x)
     sum = 0
-    n=20
-    for i in 0:n
-        if i+z+1 >= 0
-            g = gamma(big(i+z+1))
-        else
-            g = (-1)^(i)*π/(sinpi(z)*gamma(-big(z+i)))
-        end
-        sum+= (((-1)^i)/(factorial(i)*g))*(x/2)^(2*i)
+    m = 150
+    for n in 0:m
+        sum += gamma(a+n)*exp(-big(lng(b+n)))*(big(x)^n/factorial(big(n)))
     end
-    return ((big(x)/2)^z)*sum
-end
-
-function Whittaker(a,b,x)
-    sum = 0
-    n = 20
-    for i in 0:n
-        sum += (gamma(b-a+1/2+i)/gamma(2*b+1+i))*big(x^i/factorial(i))
-    end
-    sum *= gamma(1+2*b)/gamma(b-a+1/2)
-    return exp(-x/2)*(x^(b+1/2))*sum
+    return (exp(big(lng(b)))/gamma(a))*sum
 end
 
 x1(t) = (chi_p / omega_p)*(1-exp(-omega_p*t))
-y1(t) = -(c1/(2*c2))*t+(m/c2)*log(imag(conj(k)*BesselIm(xi_p*exp(-omega_p*t),im*zeta)))
+y1(t) = -(c1/(2*c2))*t+(m/c2)*log(imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta)))
 
 u(t) = (lambda_p/phi_p)*(1-exp(-phi_p*t))-(g/phi_p)*t
-v(t) = (v2_p/3)*t+(2*m/(3*c2))*log(imag(conj(r)*Whittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t))))
+v(t) = (v2_p/3)*t+(4*m/(3*c2))*log(imag(conj(r)*exp((im*eta_p/m)*(1-exp(-phi_p*t)))*exp(-im*mu_p*phi_p*t)*eta_p*exp(-phi_p*t/2)*F11(im*mu_p-im*kappa_p+1/2,1+2*im*mu_p,im*eta_p*exp(-phi_p*t))))
 x2(t) = (v(t-t1)-u(t-t1))/2 + d2_x
 y2(t) = (v(t-t1)+u(t-t1))/2 + d2_y
 
@@ -111,14 +121,8 @@ function quadDragAprox(T ; track = true)
     cnt = 0
     n = length(T)
     for t in T
-        if t < t1-.0001
-            push!(x,x1(t))
-            push!(y,y1(t))
-        else
-            push!(x,x2(t))
-            push!(y,y2(t))
-        end
-
+        push!(x,x1(t))
+        push!(y,y1(t))
         if track
             cnt += 1
             if floor(Int,100*cnt/n) > tr
@@ -185,7 +189,7 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global omega_p = (c1 + c2 * v0 * sinpi(θ/2)) / m
     global xi_p = (c2 * chi_p) / (sqrt(2) * omega_p * m)
     global zeta = sqrt(4*g*c2*m - c1^2) / (2*m*omega_p)
-    global k = -(π/(omega_p*sinh(π*zeta)))*(BesselIm(xi_p , im*zeta)*((c2*v0*sinpi(θ/2)/m)+(c1/(2*m))-im*zeta*omega_p)+xi_p*omega_p*BesselIm(xi_p,im*zeta-1))
+    global k = -(π/(omega_p*sinh(π*zeta)))*(Bessel(xi_p , im*zeta)*((c2*v0*sinpi(θ/2)/m)+(c1/(2*m))-im*zeta*omega_p)+xi_p*omega_p*Bessel(xi_p,im*zeta-1))
 
     global d2_x = x1(t1)
     global d2_y = y1(t1)
@@ -196,9 +200,9 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global eta_p = (3*c2*lambda_p)/(2*m*phi_p)
     global kappa_p = (3*c2*g)/(4*m*phi_p^2)
     global mu_p = sqrt(12*c2*g*m*phi_p^2+9*(c2^2)*(g^2)-4*(c1^2)*(phi_p^2))/(4*m*phi_p^2)
-    #global r = -(exp(π*mu_p)/(2*eta_p*mu_p))*(Whittaker(im*kappa_p,im*mu_p,im*eta_p)*((2*c2/(phi_p*m))*v2_p-im*(2*kappa_p-eta_p))+(1+im*2*(kappa_p+mu_p))*Whittaker(im*kappa_p+1,im*mu_p,im*eta_p))
+    global r = -(1/(2*eta_p*mu_p))*(F11(im*mu_p-im*kappa_p+1/2,1+2*im*mu_p,im*eta_p)*((c2/(phi_p*m))*v2_p-im*(2*kappa_p-eta_p))+(1+im*2*(kappa_p+mu_p))*F11(im*mu_p-im*kappa_p-1/2,1+2*im*mu_p,im*eta_p))
 
-    #=
+    
     println("c1 = ",c1)
     println("c2 = ",c2)
     println("t1 = ",t1)
@@ -216,5 +220,5 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     println("kappa_p = ",kappa_p)
     println("mu_p = ",mu_p)
     println("r = ",r)
-    =#
+    println("\n")
 end

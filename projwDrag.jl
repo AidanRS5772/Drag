@@ -97,13 +97,13 @@ function Bessel(x,z)
     return ((x/2)^z)*sum
 end
 
-function Whittaker(a,b,x)
+function rWhittaker(a,b,x)
     sum = 0
-    m = 1000
-    for n in 0:150
+    m = 100000
+    for n in 0:100
         sum += gamma(b-a+1/2+n)*exp(-big(lng(2*b+1+n)))*(big(x)^n/factorial(big(n)))
     end
-    for n in 151:m
+    for n in 101:m
         sum += exp(big(lng(b-a+1/2+n)))*exp(-big(lng(2*b+1+n)))*(big(x)^n/factorial(big(n)))
     end
     return convert(ComplexF64 , sqrt(x)*exp(-x/2)*(exp(big(lng(2*b+1)))/gamma(b-a+1/2))*sum)
@@ -113,7 +113,7 @@ x1(t) = (chi_p / omega_p)*(1-exp(-omega_p*t))
 y1(t) = -(c1/(2*c2))*t+(m/c2)*log(imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta)))
 
 u(t) = (lambda_p/phi_p)*(1-exp(-phi_p*t))-(g/phi_p)*t
-v(t) = (v2_p/3)*t+(4*m/(3*c2))*log(imag(conj(r)*exp(-im*mu_p*phi_p*t)*Whittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t))))
+v(t) = (v2_p/3)*t+(4*m/(3*c2))*log(imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t))))
 x2(t) = (v(t-t1)-u(t-t1))/2 + d2_x
 y2(t) = (v(t-t1)+u(t-t1))/2 + d2_y
 
@@ -192,7 +192,6 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global t3 = yratioq[end]
     global t4 = xratioq[end]
 
-
     global chi_p = v0*cospi(θ/2)
     global omega_p = (c1 + c2 * v0 * sinpi(θ/2)) / m
     global xi_p = (c2 * chi_p) / (sqrt(2) * omega_p * m)
@@ -208,7 +207,18 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global eta_p = (3*c2*lambda_p)/(2*m*phi_p)
     global kappa_p = (3*c2*g)/(4*m*phi_p^2)
     global mu_p = sqrt(12*c2*g*m*phi_p^2+9*(c2^2)*(g^2)-4*(c1^2)*(phi_p^2))/(4*m*phi_p^2)
-    global r = -(1/(2*eta_p*mu_p))*(Whittaker(im*kappa_p,im*mu_p,im*eta_p)*((c2/(phi_p*m))*v2_p-im*(2*kappa_p-eta_p))+(1+im*2*(kappa_p+mu_p))*Whittaker(im*kappa_p+1,im*mu_p,im*eta_p))
+    global r = -(1/(2*eta_p*mu_p))*(rWhittaker(im*kappa_p,im*mu_p,im*eta_p)*((c2/(phi_p*m))*v2_p-im*(2*kappa_p-eta_p))+(1+im*2*(kappa_p+mu_p))*rWhittaker(im*kappa_p+1,im*mu_p,im*eta_p))
+
+    global d3_x = x2(t2)
+    global d3_y = y2(t2)
+    global v3_x = (x2(t2+h)-x2(t2-h))/(2*h)
+    global v3_y = (y2(t2+h)-y2(t2-h))/(2*h)
+    global omega_0 = (c1+c2*v3_x)/m
+    global gammay = v3_y+g/omega_0
+    global xi_0 = (sqrt(2)*c2*gammay)/(m*omega_0)
+    global delta = (c2*g)/(sqrt(2)*m*(omega_0^2))
+    global epsilon = sqrt(2*(c2*g)^2-(c1*omega_0)^2)/(2*m*(omega_0^2))
+    global p = -(1/(2*xi_0*epsilon))*(rWhittaker(im*delta,im*epsilon,im*xi_0)*((c2*v3_x/(m*omega_0))-im*(2*delta-xi_0))+(1+2*im*(delta+epsilon))*rWhittaker(im*delta+1,im*epsilon,im*xi_0))
 
     println("c1 = ",c1)
     println("c2 = ",c2)
@@ -216,16 +226,29 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     println("t2 = ",t2)
     println("t3 = ",t3)
     println("t4 = ",t4)
+    println("")
     println("chi_p = ",chi_p)
     println("omega_p = ",omega_p)
     println("xi_p = ",xi_p)
     println("zeta = ",zeta)
     println("k = ",k)
+    println("")
     println("phi_p = ",phi_p)
     println("lambda_p = ",lambda_p)
     println("eta_p = ",eta_p)
     println("kappa_p = ",kappa_p)
     println("mu_p = ",mu_p)
     println("r = ",r)
+    println("")
+    println("d3_x = ", d3_x)
+    println("d3_y = ", d3_y)
+    println("v3_x = ", v3_x)
+    println("v3_y = ", v3_y)
+    println("omega_0 = ", omega_0)
+    println("gammay = ", gammay)
+    println("xi_0 = ", xi_0)
+    println("delta = ", delta)
+    println("epsilon = ", epsilon)
+    println("p = ",p)
     println("\n")
 end

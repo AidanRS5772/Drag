@@ -71,7 +71,7 @@ function plotProj(;dt = 10.0^-3)
     aproxX = aprox[1]
     aproxY = aprox[2]
 
-    pt1 = scatter(x = [x1(t1)] , y = [y1(t1)] , mode = "markers" , name = "t1")
+    pt1 = scatter(x = [x1(t1),x2(t2)] , y = [y1(t1),y2(t2)] , mode = "markers" , name = "transition points")
     ps = scatter(x=simX , y=simY , mode = "line" , name = "Simulation")
     pa = scatter(x = aproxX , y=aproxY , mode = "line" , name = "Aproximation")
     return [ps , pa , pt1]

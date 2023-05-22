@@ -97,20 +97,23 @@ function Bessel(x,z)
     return ((x/2)^z)*sum
 end
 
-function F11(a,b,x)
+function Whittaker(a,b,x)
     sum = 0
-    m = 150
-    for n in 0:m
-        sum += gamma(a+n)*exp(-big(lng(b+n)))*(big(x)^n/factorial(big(n)))
+    m = 1000
+    for n in 0:150
+        sum += gamma(b-a+1/2+n)*exp(-big(lng(2*b+1+n)))*(big(x)^n/factorial(big(n)))
     end
-    return (exp(big(lng(b)))/gamma(a))*sum
+    for n in 151:m
+        sum += exp(big(lng(b-a+1/2+n)))*exp(-big(lng(2*b+1+n)))*(big(x)^n/factorial(big(n)))
+    end
+    return convert(ComplexF64 , sqrt(x)*exp(-x/2)*(exp(big(lng(2*b+1)))/gamma(b-a+1/2))*sum)
 end
 
 x1(t) = (chi_p / omega_p)*(1-exp(-omega_p*t))
 y1(t) = -(c1/(2*c2))*t+(m/c2)*log(imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta)))
 
 u(t) = (lambda_p/phi_p)*(1-exp(-phi_p*t))-(g/phi_p)*t
-v(t) = (v2_p/3)*t+(4*m/(3*c2))*log(imag(conj(r)*exp((im*eta_p/m)*(1-exp(-phi_p*t)))*exp(-im*mu_p*phi_p*t)*eta_p*exp(-phi_p*t/2)*F11(im*mu_p-im*kappa_p+1/2,1+2*im*mu_p,im*eta_p*exp(-phi_p*t))))
+v(t) = (v2_p/3)*t+(4*m/(3*c2))*log(imag(conj(r)*exp(-im*mu_p*phi_p*t)*Whittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t))))
 x2(t) = (v(t-t1)-u(t-t1))/2 + d2_x
 y2(t) = (v(t-t1)+u(t-t1))/2 + d2_y
 
@@ -121,8 +124,13 @@ function quadDragAprox(T ; track = true)
     cnt = 0
     n = length(T)
     for t in T
-        push!(x,x1(t))
-        push!(y,y1(t))
+        if t < t1
+            push!(x,x1(t))
+            push!(y,y1(t))
+        else
+            push!(x,x2(t))
+            push!(y,y2(t))
+        end
         if track
             cnt += 1
             if floor(Int,100*cnt/n) > tr
@@ -144,7 +152,7 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global D = diameter
 
     global g = 9.8
-    global linC = .0016
+    global linC = .00016
     global quadC = .25
     global c1 = linC*D
     global c2 = quadC*D^2
@@ -200,9 +208,8 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global eta_p = (3*c2*lambda_p)/(2*m*phi_p)
     global kappa_p = (3*c2*g)/(4*m*phi_p^2)
     global mu_p = sqrt(12*c2*g*m*phi_p^2+9*(c2^2)*(g^2)-4*(c1^2)*(phi_p^2))/(4*m*phi_p^2)
-    global r = -(1/(2*eta_p*mu_p))*(F11(im*mu_p-im*kappa_p+1/2,1+2*im*mu_p,im*eta_p)*((c2/(phi_p*m))*v2_p-im*(2*kappa_p-eta_p))+(1+im*2*(kappa_p+mu_p))*F11(im*mu_p-im*kappa_p-1/2,1+2*im*mu_p,im*eta_p))
+    global r = -(1/(2*eta_p*mu_p))*(Whittaker(im*kappa_p,im*mu_p,im*eta_p)*((c2/(phi_p*m))*v2_p-im*(2*kappa_p-eta_p))+(1+im*2*(kappa_p+mu_p))*Whittaker(im*kappa_p+1,im*mu_p,im*eta_p))
 
-    
     println("c1 = ",c1)
     println("c2 = ",c2)
     println("t1 = ",t1)

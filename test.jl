@@ -5,4 +5,3 @@ include("projwDrag.jl")
 include("plotProjDrag.jl")
 
 instInputs()
-plot(plotProj())

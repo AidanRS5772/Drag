@@ -99,7 +99,7 @@ end
 
 function rWhittaker(a,b,x)
     sum = 0
-    m = 100000
+    m = 1000
     for n in 0:100
         sum += gamma(b-a+1/2+n)*exp(-big(lng(2*b+1+n)))*(big(x)^n/factorial(big(n)))
     end
@@ -117,6 +117,9 @@ v(t) = (v2_p/3)*t+(4*m/(3*c2))*log(imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker
 x2(t) = (v(t-t1)-u(t-t1))/2 + d2_x
 y2(t) = (v(t-t1)+u(t-t1))/2 + d2_y
 
+x3(t) = (v3_x/2)*(t-t2)+(m/c2)*log(imag(conj(p)*exp(-im*epsilon*omega_0*(t-t2))*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*(t-t2)))))+d3_x
+y3(t) = (gammay/omega_0)*(1-exp(-omega_0*(t-t2)))-(g/omega_0)*(t-t2)+d3_y
+
 function quadDragAprox(T ; track = true)
     x = []
     y = []
@@ -127,10 +130,14 @@ function quadDragAprox(T ; track = true)
         if t < t1
             push!(x,x1(t))
             push!(y,y1(t))
-        else
+        elseif t1 <= t < t2
             push!(x,x2(t))
             push!(y,y2(t))
+        else
+            push!(x,x3(t))
+            push!(y,y3(t))
         end
+
         if track
             cnt += 1
             if floor(Int,100*cnt/n) > tr
@@ -240,10 +247,6 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     println("mu_p = ",mu_p)
     println("r = ",r)
     println("")
-    println("d3_x = ", d3_x)
-    println("d3_y = ", d3_y)
-    println("v3_x = ", v3_x)
-    println("v3_y = ", v3_y)
     println("omega_0 = ", omega_0)
     println("gammay = ", gammay)
     println("xi_0 = ", xi_0)

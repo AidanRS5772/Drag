@@ -88,25 +88,59 @@ function lng(z)
     return (z-1/2)*(log(z))-z+(1/2)*log(2*π)+sum
 end
 
+function GammaAll(x)
+    if isinteger(x)
+        x = convert(Int128,x)
+        if x <= 21
+            return factorial(x-1)
+        elseif x <= 0
+            return Inf64
+        else
+            return factorial(big(x-1))
+        end
+    elseif typeof(x) == Float64
+        if x > 0
+            out  = gamma(x)
+            if isinf(out)
+                return exp(big(lng(x)))
+            else
+                return gamma(x)
+            end
+        else
+            out = -π/(sin(π*x)*gamma(1-x))
+            if out != 0.0
+                return out
+            else
+                return -π*exp(-lng(1-x))/sin(π*x)
+            end
+        end
+    elseif typeof(x) == ComplexF64
+        out = gamma(x)
+        if isinf(out) || out == 0.0
+            return exp(big(lng(x)))
+        else
+            return gamma(x)
+        end
+    end
+end
+
 function Bessel(x,z)
     sum = 0
     n=20
     for i in 0:n
-        sum+= (((-1)^i)/(gamma(i+z+1)*factorial(i)))*(x/2)^(2*i)
+        sum+= (((-1)^i)/(GammaAll(i+z+1)*GammaAll(i+1)))*(x/2)^(2*i)
     end
     return ((x/2)^z)*sum
 end
 
+
 function rWhittaker(a,b,x)
     sum = 0
     m = 1200
-    for n in 0:100
-        sum += gamma(b-a+1/2+n)*exp(-big(lng(2*b+1+n)))*(big(x)^n/factorial(big(n)))
+    for n in 0:m
+        sum += (GammaAll(b-a+1/2+n)/GammaAll(2*b+1+n))*(big(x)^n/GammaAll(n+1))
     end
-    for n in 101:m
-        sum += exp(big(lng(b-a+1/2+n)))*exp(-big(lng(2*b+1+n)))*(big(x)^n/factorial(big(n)))
-    end
-    return convert(ComplexF64 , sqrt(x)*exp(-x/2)*(exp(big(lng(2*b+1)))/gamma(b-a+1/2))*sum)
+    return convert(ComplexF64 , sqrt(x)*exp(-x/2)*(GammaAll(2*b+1)/GammaAll(b-a+1/2))*sum)
 end
 
 x1(t) = (chi_p / omega_p)*(1-exp(-omega_p*t))
@@ -125,6 +159,8 @@ u4(t) = (v4_m/3)*t-(4*m/(3*c2))*log(imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittake
 x4(t) = (v4(t-t3)-u4(t-t3))/2 + d4_x
 y4(t) = (v4(t-t3)+u4(t-t3))/2 + d4_y
 
+x5(t) = (chi_m/omega_m)*(1-exp(-omega_m*(t-t4))) + d5_x
+y5(t) = (c1/(2*c2))*(t-t4)-(m/c2)*log(l_p*Bessel(xi_m*exp(-omega_m*(t-t4)),Omega)+l_m*Bessel(xi_m*exp(-omega_m*(t-t4)),-Omega))+d5_y
 
 function quadDragAprox(T ; track = true)
     x = []
@@ -133,6 +169,7 @@ function quadDragAprox(T ; track = true)
     cnt = 0
     n = length(T)
     for t in T
+
         if t < t1
             push!(x,x1(t))
             push!(y,y1(t))
@@ -142,11 +179,14 @@ function quadDragAprox(T ; track = true)
         elseif t2 <= t < t3
             push!(x,x3(t))
             push!(y,y3(t))
-        else
+        elseif t3 <= t < t4
             push!(x,x4(t))
             push!(y,y4(t))
+        else
+            push!(x,x5(t))
+            push!(y,y5(t))
         end
-
+        
         if track
             cnt += 1
             if floor(Int,100*cnt/n) > tr
@@ -253,8 +293,9 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global chi_m = (x4(t4+h)-x4(t4-h))/(2*h)
     global omega_m = (c1-c2*v5_y)/m
     global xi_m = (c2*chi_m)/(sqrt(2)*omega_m*m)
-    global Omega = sqrt(4*g*c2*m+c1^2) / (2*m*omega_m)
-
+    global Omega = sqrt(4*g*c2*m+c1^2)/(2*m*omega_m)
+    global l_p = (π/(2*sinpi(Omega)))*(Bessel(xi_m,-Omega)*(((c1-2*c2*v5_y)/(2*m*omega_m))+Omega)+xi_m*Bessel(xi_m,-Omega-1))
+    global l_m = -(π/(2*sinpi(Omega)))*(Bessel(xi_m,Omega)*(((c1-2*c2*v5_y)/(2*m*omega_m))-Omega)+xi_m*Bessel(xi_m,Omega-1))
 
     println("c1 = ",c1)
     println("c2 = ",c2)
@@ -290,12 +331,11 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     println("mu_m = ", mu_m)
     println("s = ",s)
     println("")
-    println("d5_x = ", d5_x)
-    println("d5_y = ", d5_y)
-    println("v5_y = ", v5_y)
     println("chi_m = ", chi_m)
     println("omega_m = ", omega_m)
     println("xi_m = ", xi_m)
     println("Omega = ", Omega)
+    println("l_p = ",l_p)
+    println("l_m = ",l_m)
     println("\n")
 end

@@ -133,7 +133,6 @@ function Bessel(x,z)
     return ((x/2)^z)*sum
 end
 
-
 function rWhittaker(a,b,x)
     sum = 0
     m = 1200
@@ -163,13 +162,16 @@ x5(t) = (chi_m/omega_m)*(1-exp(-omega_m*(t-t4))) + d5_x
 y5(t) = (c1/(2*c2))*(t-t4)-(m/c2)*log(l_p*Bessel(xi_m*exp(-omega_m*(t-t4)),Omega)+l_m*Bessel(xi_m*exp(-omega_m*(t-t4)),-Omega))+d5_y
 
 function quadDragAprox(T ; track = true)
+    preCalc()
     x = []
     y = []
     tr = 0
     cnt = 0
     n = length(T)
     for t in T
-
+        push!(x,x1(t))
+        push!(y,y1(t))
+        #=
         if t < t1
             push!(x,x1(t))
             push!(y,y1(t))
@@ -186,7 +188,7 @@ function quadDragAprox(T ; track = true)
             push!(x,x5(t))
             push!(y,y5(t))
         end
-        
+        =#
         if track
             cnt += 1
             if floor(Int,100*cnt/n) > tr
@@ -212,7 +214,9 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global quadC = .25
     global c1 = linC*D
     global c2 = quadC*D^2
+end
 
+function preCalc()
     simdata = quadDragSim(dt = .0001 , track = false)
     xs = simdata[1]
     ys = simdata[2]
@@ -253,7 +257,7 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global xi_p = (c2 * chi_p) / (sqrt(2) * omega_p * m)
     global zeta = sqrt(4*g*c2*m - c1^2) / (2*m*omega_p)
     global k = -(π/(omega_p*sinh(π*zeta)))*(Bessel(xi_p , im*zeta)*((c2*v0*sinpi(θ/2)/m)+(c1/(2*m))-im*zeta*omega_p)+xi_p*omega_p*Bessel(xi_p,im*zeta-1))
-
+    
     global d2_x = x1(t1)
     global d2_y = y1(t1)
     global v2_p = (y1(t1+h)-y1(t1-h))/(2*h)+(x1(t1+h)-x1(t1-h))/(2*h)
@@ -264,7 +268,7 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global kappa_p = (3*c2*g)/(4*m*phi_p^2)
     global mu_p = sqrt(12*c2*g*m*phi_p^2+9*(c2^2)*(g^2)-4*(c1^2)*(phi_p^2))/(4*m*phi_p^2)
     global r = -(1/(2*eta_p*mu_p))*(rWhittaker(im*kappa_p,im*mu_p,im*eta_p)*((c2/(phi_p*m))*v2_p-im*(2*kappa_p-eta_p))+(1+im*2*(kappa_p+mu_p))*rWhittaker(im*kappa_p+1,im*mu_p,im*eta_p))
-
+    
     global d3_x = x2(t2)
     global d3_y = y2(t2)
     global v3_x = (x2(t2+h)-x2(t2-h))/(2*h)
@@ -287,6 +291,7 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global mu_m = sqrt(-12*c2*g*m*phi_m^2+9*(c2^2)*(g^2)-4*(c1^2)*(phi_m^2))/(4*m*phi_m^2)
     global s = (1/(2*eta_m*mu_m))*(rWhittaker(im*kappa_m,im*mu_m,im*eta_m)*((c2/(phi_m*m))*v4_m+im*(2*kappa_m-eta_m))-(1+im*2*(kappa_m+mu_m))*rWhittaker(im*kappa_m+1,im*mu_m,im*eta_m))
 
+    
     global d5_x = x4(t4)
     global d5_y = y4(t4)
     global v5_y = (y4(t4+h)-y4(t4-h))/(2*h)
@@ -296,41 +301,49 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global Omega = sqrt(4*g*c2*m+c1^2)/(2*m*omega_m)
     global l_p = (π/(2*sinpi(Omega)))*(Bessel(xi_m,-Omega)*(((c1-2*c2*v5_y)/(2*m*omega_m))+Omega)+xi_m*Bessel(xi_m,-Omega-1))
     global l_m = -(π/(2*sinpi(Omega)))*(Bessel(xi_m,Omega)*(((c1-2*c2*v5_y)/(2*m*omega_m))-Omega)+xi_m*Bessel(xi_m,Omega-1))
+    
+    println("")
 
     println("c1 = ",c1)
     println("c2 = ",c2)
-    println("t1 = ",t1)
-    println("t2 = ",t2)
-    println("t3 = ",t3)
-    println("t4 = ",t4)
+
     println("")
+
     println("chi_p = ",chi_p)
     println("omega_p = ",omega_p)
     println("xi_p = ",xi_p)
     println("zeta = ",zeta)
     println("k = ",k)
+    
     println("")
+    #=
     println("phi_p = ",phi_p)
     println("lambda_p = ",lambda_p)
     println("eta_p = ",eta_p)
     println("kappa_p = ",kappa_p)
     println("mu_p = ",mu_p)
     println("r = ",r)
+
     println("")
+    
     println("omega_0 = ", omega_0)
     println("gammay = ", gammay)
     println("xi_0 = ", xi_0)
     println("delta = ", delta)
     println("epsilon = ", epsilon)
     println("p = ",p)
+
     println("")
+
     println("phi_m = ", phi_m)
     println("lambda_m = ", lambda_m)
     println("eta_m = ", eta_m)
     println("kappa_m = ", kappa_m)
     println("mu_m = ", mu_m)
     println("s = ",s)
+
     println("")
+
     println("chi_m = ", chi_m)
     println("omega_m = ", omega_m)
     println("xi_m = ", xi_m)
@@ -338,4 +351,5 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     println("l_p = ",l_p)
     println("l_m = ",l_m)
     println("\n")
+    =#
 end

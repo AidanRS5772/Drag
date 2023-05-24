@@ -67,12 +67,11 @@ function plotProj(;dt = 10.0^-3)
     time = sim[3]
 
     t = LinRange(0,time,floor(Int,time/dt))
-    aprox = quadDragAprox(t ; track = false)
+    aprox = quadDragAprox(t)
     aproxX = aprox[1]
     aproxY = aprox[2]
 
-    pt1 = scatter(x = [x1(t1),x2(t2),x3(t3),x4(t4)] , y = [y1(t1),y2(t2),y3(t3),y4(t4)] , mode = "markers" , name = "transition points")
     ps = scatter(x=simX , y=simY , mode = "line" , name = "Simulation")
     pa = scatter(x = aproxX , y=aproxY , mode = "line" , name = "Aproximation")
-    return [ps , pa , pt1]
+    return [ps , pa]
 end

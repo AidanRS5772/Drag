@@ -58,20 +58,41 @@ function manyErrorPlots(N,b,cutOff)
     return plot(error...,layout = (2,N))
 end
 
-function plotProj(;dt = 10.0^-3)
-
-    sim = quadDragSim(dt = 10^-6 , track = false)
+function pProjP(;dt = 10.0^-3)
+    sim = qDSim()
 
     simX = sim[1]
     simY = sim[2]
     time = sim[3]
 
     t = LinRange(0,time,floor(Int,time/dt))
-    aprox = quadDragAprox(t)
+    aprox = qDAproxP(t)
     aproxX = aprox[1]
     aproxY = aprox[2]
 
     ps = scatter(x=simX , y=simY , mode = "line" , name = "Simulation")
     pa = scatter(x = aproxX , y=aproxY , mode = "line" , name = "Aproximation")
+
+    return [ps , pa]
+end
+
+function pProjV(;dt = 10.0^-3)
+    dts = 10^(-6)
+    sim = qDSim(dt = dts)
+    simX = sim[1]
+    simY = sim[2]
+    time = sim[3]
+
+    simDX = (simX[3:end] .- simX[1:end-2])/(2*dts)
+    simDY = (simY[3:end] .- simY[1:end-2])/(2*dt)
+
+    t = LinRange(0,time,floor(Int,time/dt))
+    aproxV = qDAproxV(t)
+    aproxDX = aproxV[1]
+    aproxDY = aproxV[2]
+
+    ps = scatter(x=simDX , y=simDY , mode = "line" , name = "Simulation")
+    pa = scatter(x = aproxDX , y=aproxDY , mode = "line" , name = "Aproximation")
+
     return [ps , pa]
 end

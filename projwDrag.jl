@@ -7,7 +7,7 @@ function dragEq(a,b)
     return -(c1/m)*a-(c2/m)*a*sqrt(a^2+b^2)
 end
 
-function quadDragSim(;dt = 10.0^-6,track = true)
+function qDSim(;dt = 10.0^-6,track = true)
     if track
         println("\nSimulation:\n")
     end
@@ -60,7 +60,44 @@ function quadDragSim(;dt = 10.0^-6,track = true)
 
     ymaxi = findmax(y)[2]
 
-    return x , y , time , cnt , dt
+    return x , y , time , cnt
+end
+
+function newtonsWp(f::Function , g::Function , init , tol , preP::Bool , q)
+    h = 10^(-12)
+    px = init
+
+    while tol < abs(g(px))
+        px -= 2*g(px)*h/(g(px+h)-g(px-h))
+    end
+
+    if preP
+        x = px - tol
+    else
+        x = px + tol
+    end
+    
+    while tol < abs(f(x)-q)
+        x -= 2*(f(x)-q)*h/(f(x+h)-f(x-h))
+        if (x > px && preP) || (x < px && !preP)
+            x = 2*px - x
+        end
+    end
+    return x
+end
+
+function newtonNp(f::Function , init , tol , q)
+    h = 10^(-12)
+    x = init
+    while tol < abs(f(x)-q)
+        x -= 2*(f(x)-q)*h/(f(x+h)-f(x-h))
+    end
+    return x
+end
+
+function finiteD(x , y , dt)
+    dx = (x[3:end] .- x[1:end-2])/(2*dt)
+    dy = (y[3:end] .- y[1:end-2])/(2*dt)
 end
 
 function lng(z)
@@ -101,25 +138,25 @@ function GammaAll(x)
     elseif typeof(x) == Float64
         if x > 0
             out  = gamma(x)
-            if isinf(out)
+            if isinf(out^2)
                 return exp(big(lng(x)))
             else
-                return gamma(x)
+                return out
             end
         else
             out = -π/(sin(π*x)*gamma(1-x))
-            if out != 0.0
+            if out^2 != 0.0
                 return out
             else
-                return -π*exp(-lng(1-x))/sin(π*x)
+                return -π*exp(-big(lng(1-x)))/sin(π*x)
             end
         end
     elseif typeof(x) == ComplexF64
         out = gamma(x)
-        if isinf(out) || out == 0.0
+        if isinf(out^2) || out^2 == 0.0
             return exp(big(lng(x)))
         else
-            return gamma(x)
+            return out
         end
     end
 end
@@ -144,9 +181,13 @@ end
 
 x1(t) = (chi_p / omega_p)*(1-exp(-omega_p*t))
 y1(t) = -(c1/(2*c2))*t+(m/c2)*log(imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta)))
+vx1(t) = chi_p*exp(-omega_p*t)
+vy1(t) = -(c1/(2*c2))+(m*xi_p*omega_p/(2*c2))*exp(-omega_p*t)*((imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta+1))/imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta)))-(imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta-1))/imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta))))
+rxy(t) = vx1(t)/vy1(t)
 
 u2(t) = (lambda_p/phi_p)*(1-exp(-phi_p*t))-(g/phi_p)*t
 v2(t) = (v2_p/3)*t+(4*m/(3*c2))*log(imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t))))
+
 x2(t) = (v2(t-t1)-u2(t-t1))/2 + d2_x
 y2(t) = (v2(t-t1)+u2(t-t1))/2 + d2_y
 
@@ -161,7 +202,7 @@ y4(t) = (v4(t-t3)+u4(t-t3))/2 + d4_y
 x5(t) = (chi_m/omega_m)*(1-exp(-omega_m*(t-t4))) + d5_x
 y5(t) = (c1/(2*c2))*(t-t4)-(m/c2)*log(l_p*Bessel(xi_m*exp(-omega_m*(t-t4)),Omega)+l_m*Bessel(xi_m*exp(-omega_m*(t-t4)),-Omega))+d5_y
 
-function quadDragAprox(T ; track = true)
+function qDAproxP(T ; track = true)
     preCalc()
     x = []
     y = []
@@ -169,26 +210,11 @@ function quadDragAprox(T ; track = true)
     cnt = 0
     n = length(T)
     for t in T
-        push!(x,x1(t))
-        push!(y,y1(t))
-        #=
         if t < t1
             push!(x,x1(t))
             push!(y,y1(t))
-        elseif t1 <= t < t2
-            push!(x,x2(t))
-            push!(y,y2(t))
-        elseif t2 <= t < t3
-            push!(x,x3(t))
-            push!(y,y3(t))
-        elseif t3 <= t < t4
-            push!(x,x4(t))
-            push!(y,y4(t))
-        else
-            push!(x,x5(t))
-            push!(y,y5(t))
         end
-        =#
+
         if track
             cnt += 1
             if floor(Int,100*cnt/n) > tr
@@ -200,6 +226,31 @@ function quadDragAprox(T ; track = true)
     end
 
     return x , y
+end
+
+function qDAproxV(T ; track = true)
+    preCalc()
+    vx = []
+    vy = []
+    tr = 0
+    cnt = 0
+    n = length(T)
+    for t in T
+        if t < t1
+            push!(vx,vx1(t))
+            push!(vy,vy1(t))
+        end
+
+        if track
+            cnt += 1
+            if floor(Int,100*cnt/n) > tr
+                tr += 1
+                @printf("%.f%% \n",100*cnt/n)
+            end
+        end
+    end
+
+    return vx , vy
 end
 
 function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
@@ -216,41 +267,9 @@ function instInputs(;theta = .95 , velocity = 5.0 , mass = .1 , diameter = .1)
     global c2 = quadC*D^2
 end
 
-function preCalc()
-    simdata = quadDragSim(dt = .0001 , track = false)
-    xs = simdata[1]
-    ys = simdata[2]
-    time = simdata[3]
-    cnt = simdata[4]
-    dt = simdata[5]
-
-    t = LinRange(0,time,cnt)
-
-    dx = []
-    dy = []
-
-    for i in 2:cnt-1
-        push!(dx,(xs[i+1]-xs[i-1])/(2*dt))
-        push!(dy,(ys[i+1]-ys[i-1])/(2*dt))
-    end
-
-    global q = .677269
-
-    xratio = abs.(dx)./abs.(dy)
-    yratio = abs.(dy)./abs.(dx)
-
-    xratioq = findall(xratio .> q)
-    yratioq = findall(yratio .< q)
-
-    xratioq = xratioq.*dt
-    yratioq = yratioq.*dt
-
-    h = 10^(-8)
-
-    global t1 = xratioq[1]
-    global t2 = yratioq[1]
-    global t3 = yratioq[end]
-    global t4 = xratioq[end]
+function preCalc(;print = true)
+    q = .677269
+    h = 10^(-12)
 
     global chi_p = v0*cospi(θ/2)
     global omega_p = (c1 + c2 * v0 * sinpi(θ/2)) / m
@@ -258,6 +277,8 @@ function preCalc()
     global zeta = sqrt(4*g*c2*m - c1^2) / (2*m*omega_p)
     global k = -(π/(omega_p*sinh(π*zeta)))*(Bessel(xi_p , im*zeta)*((c2*v0*sinpi(θ/2)/m)+(c1/(2*m))-im*zeta*omega_p)+xi_p*omega_p*Bessel(xi_p,im*zeta-1))
     
+    global t1 = newtonsWp(rxy , vy1 , 0 , sqrt(h) , true , q)
+
     global d2_x = x1(t1)
     global d2_y = y1(t1)
     global v2_p = (y1(t1+h)-y1(t1-h))/(2*h)+(x1(t1+h)-x1(t1-h))/(2*h)
@@ -268,7 +289,7 @@ function preCalc()
     global kappa_p = (3*c2*g)/(4*m*phi_p^2)
     global mu_p = sqrt(12*c2*g*m*phi_p^2+9*(c2^2)*(g^2)-4*(c1^2)*(phi_p^2))/(4*m*phi_p^2)
     global r = -(1/(2*eta_p*mu_p))*(rWhittaker(im*kappa_p,im*mu_p,im*eta_p)*((c2/(phi_p*m))*v2_p-im*(2*kappa_p-eta_p))+(1+im*2*(kappa_p+mu_p))*rWhittaker(im*kappa_p+1,im*mu_p,im*eta_p))
-    
+    #=
     global d3_x = x2(t2)
     global d3_y = y2(t2)
     global v3_x = (x2(t2+h)-x2(t2-h))/(2*h)
@@ -301,55 +322,59 @@ function preCalc()
     global Omega = sqrt(4*g*c2*m+c1^2)/(2*m*omega_m)
     global l_p = (π/(2*sinpi(Omega)))*(Bessel(xi_m,-Omega)*(((c1-2*c2*v5_y)/(2*m*omega_m))+Omega)+xi_m*Bessel(xi_m,-Omega-1))
     global l_m = -(π/(2*sinpi(Omega)))*(Bessel(xi_m,Omega)*(((c1-2*c2*v5_y)/(2*m*omega_m))-Omega)+xi_m*Bessel(xi_m,Omega-1))
-    
-    println("")
-
-    println("c1 = ",c1)
-    println("c2 = ",c2)
-
-    println("")
-
-    println("chi_p = ",chi_p)
-    println("omega_p = ",omega_p)
-    println("xi_p = ",xi_p)
-    println("zeta = ",zeta)
-    println("k = ",k)
-    
-    println("")
-    #=
-    println("phi_p = ",phi_p)
-    println("lambda_p = ",lambda_p)
-    println("eta_p = ",eta_p)
-    println("kappa_p = ",kappa_p)
-    println("mu_p = ",mu_p)
-    println("r = ",r)
-
-    println("")
-    
-    println("omega_0 = ", omega_0)
-    println("gammay = ", gammay)
-    println("xi_0 = ", xi_0)
-    println("delta = ", delta)
-    println("epsilon = ", epsilon)
-    println("p = ",p)
-
-    println("")
-
-    println("phi_m = ", phi_m)
-    println("lambda_m = ", lambda_m)
-    println("eta_m = ", eta_m)
-    println("kappa_m = ", kappa_m)
-    println("mu_m = ", mu_m)
-    println("s = ",s)
-
-    println("")
-
-    println("chi_m = ", chi_m)
-    println("omega_m = ", omega_m)
-    println("xi_m = ", xi_m)
-    println("Omega = ", Omega)
-    println("l_p = ",l_p)
-    println("l_m = ",l_m)
-    println("\n")
     =#
+    if print
+        println("")
+
+        println("c1 = ",c1)
+        println("c2 = ",c2)
+        println("t1 = ",t1)
+
+        println("")
+
+        println("chi_p = ",chi_p)
+        println("omega_p = ",omega_p)
+        println("xi_p = ",xi_p)
+        println("zeta = ",zeta)
+        println("k = ",k)
+        
+        println("")
+
+        println("phi_p = ",phi_p)
+        println("lambda_p = ",lambda_p)
+        println("eta_p = ",eta_p)
+        println("kappa_p = ",kappa_p)
+        println("mu_p = ",mu_p)
+        println("r = ",r)
+
+        println("")
+        #=
+        println("omega_0 = ", omega_0)
+        println("gammay = ", gammay)
+        println("xi_0 = ", xi_0)
+        println("delta = ", delta)
+        println("epsilon = ", epsilon)
+        println("p = ",p)
+
+        println("")
+
+        println("phi_m = ", phi_m)
+        println("lambda_m = ", lambda_m)
+        println("eta_m = ", eta_m)
+        println("kappa_m = ", kappa_m)
+        println("mu_m = ", mu_m)
+        println("s = ",s)
+
+        println("")
+
+        println("chi_m = ", chi_m)
+        println("omega_m = ", omega_m)
+        println("xi_m = ", xi_m)
+        println("Omega = ", Omega)
+        println("l_p = ",l_p)
+        println("l_m = ",l_m)
+
+        println("")
+        =#
+    end
 end

@@ -183,13 +183,17 @@ x1(t) = (chi_p / omega_p)*(1-exp(-omega_p*t))
 y1(t) = -(c1/(2*c2))*t+(m/c2)*log(imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta)))
 vx1(t) = chi_p*exp(-omega_p*t)
 vy1(t) = -(c1/(2*c2))+(m*xi_p*omega_p/(2*c2))*exp(-omega_p*t)*((imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta+1))/imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta)))-(imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta-1))/imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta))))
-rxy(t) = vx1(t)/vy1(t)
+rxy1(t) = vx1(t)/vy1(t)
 
 u2(t) = (lambda_p/phi_p)*(1-exp(-phi_p*t))-(g/phi_p)*t
 v2(t) = (v2_p/3)*t+(4*m/(3*c2))*log(imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t))))
-
+du2(t) = lambda_p*exp(-phi_p*t) - g/phi_p
+dv2(t) = (v2_p/3)+(4*m*phi_p/(6*c2))*((2*kappa_p-eta_p*exp(-phi_p*t))*imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t)))/imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t)))-imag(conj(r)*(1+2*im*(kappa_p+mu_p))*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p+1,im*mu_p,im*eta_p*exp(-phi_p*t)))/imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t))))
 x2(t) = (v2(t-t1)-u2(t-t1))/2 + d2_x
 y2(t) = (v2(t-t1)+u2(t-t1))/2 + d2_y
+vx2(t) = (dv2(t-t1)-du2(t-t1))/2
+vy2(t) = (dv2(t-t1)+du2(t-t1))/2
+ryx2(t) = vy2(t)/vx2(t)
 
 x3(t) = (v3_x/2)*(t-t2)+(m/c2)*log(imag(conj(p)*exp(-im*epsilon*omega_0*(t-t2))*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*(t-t2)))))+d3_x
 y3(t) = (gammay/omega_0)*(1-exp(-omega_0*(t-t2)))-(g/omega_0)*(t-t2)+d3_y
@@ -213,6 +217,9 @@ function qDAproxP(T ; track = true)
         if t < t1
             push!(x,x1(t))
             push!(y,y1(t))
+        elseif t1 <= t < t1 + .1
+            push!(x,x2(t))
+            push!(y,y2(t))
         end
 
         if track
@@ -239,6 +246,9 @@ function qDAproxV(T ; track = true)
         if t < t1
             push!(vx,vx1(t))
             push!(vy,vy1(t))
+        elseif t1 <= t < t2
+            push!(vx,vx2(t))
+            push!(vy,vy2(t))
         end
 
         if track
@@ -277,7 +287,7 @@ function preCalc(;print = true)
     global zeta = sqrt(4*g*c2*m - c1^2) / (2*m*omega_p)
     global k = -(π/(omega_p*sinh(π*zeta)))*(Bessel(xi_p , im*zeta)*((c2*v0*sinpi(θ/2)/m)+(c1/(2*m))-im*zeta*omega_p)+xi_p*omega_p*Bessel(xi_p,im*zeta-1))
     
-    global t1 = newtonsWp(rxy , vy1 , 0 , sqrt(h) , true , q)
+    global t1 = newtonsWp(rxy1 , vy1 , 0 , sqrt(h) , true , q)
 
     global d2_x = x1(t1)
     global d2_y = y1(t1)
@@ -289,6 +299,8 @@ function preCalc(;print = true)
     global kappa_p = (3*c2*g)/(4*m*phi_p^2)
     global mu_p = sqrt(12*c2*g*m*phi_p^2+9*(c2^2)*(g^2)-4*(c1^2)*(phi_p^2))/(4*m*phi_p^2)
     global r = -(1/(2*eta_p*mu_p))*(rWhittaker(im*kappa_p,im*mu_p,im*eta_p)*((c2/(phi_p*m))*v2_p-im*(2*kappa_p-eta_p))+(1+im*2*(kappa_p+mu_p))*rWhittaker(im*kappa_p+1,im*mu_p,im*eta_p))
+
+    global t2 = newtonNp(ryx2 , t1 , sqrt(h) , q)
     #=
     global d3_x = x2(t2)
     global d3_y = y2(t2)
@@ -329,6 +341,7 @@ function preCalc(;print = true)
         println("c1 = ",c1)
         println("c2 = ",c2)
         println("t1 = ",t1)
+        println("t2 = ",t2)
 
         println("")
 

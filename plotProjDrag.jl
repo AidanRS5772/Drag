@@ -68,10 +68,13 @@ function pProjP(;dt = 10.0^-3)
 
     ta = LinRange(0,time,floor(Int,time/dt))
     ts = LinRange(0,time,cnt)
-    aprox = qDAproxP(ta ; track = false)
+    aprox = qDAproxP(ta ; track = true)
     aproxX = aprox[1]
     aproxY = aprox[2]
 
+    ptb = scatter(x = [x1(t1) , x2(t2) , x3(t3) , x4(t4)] , y = [y1(t1) , y2(t2) , y3(t3) , y4(t4)] , mode = "markers" , name = "Transition Points Both")
+    pty = scatter(x = [t1 , t2 , t3 , t4] , y = [y1(t1) , y2(t2) , y3(t3) , y4(t4)] , mode = "markers" , name = "Transition Points Y")
+    ptx = scatter(x = [t1 , t2 , t3 , t4] , y = [x1(t1) , x2(t2) , x3(t3) , x4(t4)] , mode = "markers" , name = "Transition Points X")
     ps = scatter(x=simX , y=simY , mode = "line" , name = "Sim")
     pa = scatter(x = aproxX , y=aproxY , mode = "line" , name = "Aprox")
     psx = scatter(x = ts , y = simX , mode = "line" , name = "Sim X")
@@ -79,11 +82,11 @@ function pProjP(;dt = 10.0^-3)
     pax = scatter(x = ta , y = aproxX , mode = "line" , name = "Aprox X")
     pay = scatter(x = ta , y = aproxY, mode = "line" , name = "Aprox Y")
 
-    return [ps , pa] , [psx , psy , pax , pay]
+    return [ps , pa , ptb] , [psx , psy , pax , pay , pty , ptx]
 end
 
 function pProjV(;dt = 10.0^-3)
-    dts = 10^(-6)
+    dts = 10^(-5)
     sim = qDSim(dt = dts , track = false)
     simX = sim[1]
     simY = sim[2]
@@ -99,10 +102,13 @@ function pProjV(;dt = 10.0^-3)
 
     ta = LinRange(0,time,floor(Int,time/dt))
     ts = LinRange(0,time,cnt)
-    aproxV = qDAproxV(ta ; track = false)
+    aproxV = qDAproxV(ta ; track = true)
     aproxDX = aproxV[1]
     aproxDY = aproxV[2]
 
+    ptb = scatter(x = [vx1(t1) , vx2(t2) , vx3(t3) , vx4(t4)] , y = [vy1(t1) , vy2(t2) , vy3(t3) , vy4(t4)] , mode = "markers" , name = "Transition Points Both")
+    pty = scatter(x = [t1 , t2 , t3 , t4] , y = [vy1(t1) , vy2(t2) , vy3(t3) , vy4(t4)] , mode = "markers" , name = "Transition Points Y")
+    ptx = scatter(x = [t1 , t2 , t3 , t4] , y = [vx1(t1) , vx2(t2) , vx3(t3) , vx4(t4)] , mode = "markers" , name = "Transition Points X")
     ps = scatter(x=simDX , y=simDY , mode = "line" , name = "Simulation Velocity")
     pa = scatter(x = aproxDX , y=aproxDY , mode = "line" , name = "Aproximation Velocity")
     psdx = scatter(x = ts , y = simDX , mode = "line" , name = "Sim DX")
@@ -110,5 +116,5 @@ function pProjV(;dt = 10.0^-3)
     padx = scatter(x = ta , y = aproxDX , mode = "line" , name = "Aprox DX")
     pady = scatter(x = ta , y = aproxDY, mode = "line" , name = "Aprox DY")
 
-    return [ps , pa] , [psdx , psdy , padx , pady]
+    return [ps , pa , ptb] , [psdx , psdy , padx , pady , pty , ptx]
 end

@@ -4,4 +4,3 @@ using TickTock
 using Cubature
 include("projwDrag.jl")
 
-

@@ -452,5 +452,5 @@ function preCalc(;print = true)
         if print println("t4 = " , t4 , "\n") end
         d5Vals(x4(t4) , y4(t4) , vx4(t4) , track = print)
     end
-    
 end
+    

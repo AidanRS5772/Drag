@@ -231,12 +231,12 @@ function regime1(dt , print::Bool , track::Bool , PorV::Bool)
     y1(t) = -(c1/(2*c2))*t+(m/c2)*log(abs(imag(conj(k)*Bessel(xi_p*exp(-omega_p*t),im*zeta))))
     rxy1(t) = vx1(t)/vy1(t)-q
 
-    #temp_u2(t) = exp((c1/m+c2*v2_p/(6*m))*t)*((abs(imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t)))))^(2/3))
-    #du2(t) = v2_m/temp_u2(t)-(g/temp_u2(t))*numInt(temp_u2 , 0 , t)
-    #u2(t) = numInt(du2 , 0 , t)
-    du2(t) = lambda_p*exp(-phi_p*t)-g/phi_p
+    temp_u2(t) = exp((c1/m+c2*v2_p/(6*m))*t)*((abs(imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t)))))^(2/3))
+    du2(t) = v2_m/temp_u2(t)-(g/temp_u2(t))*numInt(temp_u2 , 0 , t)
+    u2(t) = numInt(du2 , 0 , t)
+    #du2(t) = lambda_p*exp(-phi_p*t)-g/phi_p
     dv2(t) = (v2_p/3)+(2*m*phi_p/(3*c2))*((2*kappa_p-eta_p*exp(-phi_p*t))*real(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t)))-imag(conj(r)*(1+2*im*(kappa_p+mu_p))*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p+1,im*mu_p,im*eta_p*exp(-phi_p*t))))/imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t)))
-    u2(t) = (lambda_p/phi_p)*(1-exp(-phi_p*t))-(g/phi_p)*t
+    #u2(t) = (lambda_p/phi_p)*(1-exp(-phi_p*t))-(g/phi_p)*t
     v2(t) = (v2_p/3)*t+(4*m/(3*c2))*log(abs(imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t)))))
     x2(t) = (v2(t-t1)-u2(t-t1))/2 + d2_x
     y2(t) = (v2(t-t1)+u2(t-t1))/2 + d2_y
@@ -244,22 +244,22 @@ function regime1(dt , print::Bool , track::Bool , PorV::Bool)
     vy2(t) = (dv2(t-t1)+du2(t-t1))/2
     ryx2(t) = vy2(t)/vx2(t)-q
 
-    #temp_y3(t) = exp((c1/m+v3_x/2)*t)*imag(conj(p)*exp(-im*epsilon*omega_0*t)*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*t)))
-    #temp_vy3(t) = v3_y/temp_y3(t)-(g/temp_y3(t))*numInt(temp_y3 , 0 , t)
-    #vy3(t) = v3_y/temp_y3(t-t2)-(g/temp_y3(t-t2))*numInt(temp_y3 , 0 , t-t2)
-    #y3(t) = numInt(temp_vy3 , 0 , t)
+    temp_y3(t) = exp((c1/m+c2*v3_x/(2*m))*t)*imag(conj(p)*exp(-im*epsilon*omega_0*t)*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*t)))
+    temp_vy3(t) = v3_y/temp_y3(t)-(g/temp_y3(t))*numInt(temp_y3 , 0 , t)
+    vy3(t) = v3_y/temp_y3(t-t2)-(g/temp_y3(t-t2))*numInt(temp_y3 , 0 , t-t2)
+    y3(t) = numInt(temp_vy3 , 0 , t-t2)+d3_y
     vx3(t) = (v3_x/2)+(m*omega_0/(2*c2))*((2*delta-xi_0*exp(-omega_0*(t-t2)))*real(conj(p)*exp(-im*epsilon*omega_0*(t-t2))*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*(t-t2))))-imag(conj(p)*(1+2*im*(delta+epsilon))*exp(-im*epsilon*omega_0*(t-t2))*rWhittaker(im*delta+1,im*epsilon,im*xi_0*exp(-omega_0*(t-t2)))))/imag(conj(p)*exp(-im*epsilon*omega_0*(t-t2))*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*(t-t2))))
-    vy3(t) = gammay*exp(-omega_0*(t-t2))-g/omega_0
+    #vy3(t) = gammay*exp(-omega_0*(t-t2))-g/omega_0
     x3(t) = (v3_x/2)*(t-t2)+(m/c2)*log(abs(imag(conj(p)*exp(-im*epsilon*omega_0*(t-t2))*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*(t-t2))))))+d3_x
-    y3(t) = (gammay/omega_0)*(1-exp(-omega_0*(t-t2)))-(g/omega_0)*(t-t2)+d3_y
+    #y3(t) = (gammay/omega_0)*(1-exp(-omega_0*(t-t2)))-(g/omega_0)*(t-t2)+d3_y
     ryx3(t) = -vy3(t)/vx3(t)-q
 
-    #temp_v4(t) = exp((c1/m-c2*v4_m/(6*m))*t)*((abs(imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))))^(2/3))
-    #dv4(t) = v4_p/temp_v4(t)-(g/temp_v4(t))*numInt(temp_v4 , 0 , t)
-    #v4(t) = numInt(dv4 , 0 , t)
-    dv4(t) = lambda_m*exp(-phi_m*t)-g/phi_m
+    temp_v4(t) = exp((c1/m-c2*v4_m/(6*m))*t)*((abs(imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))))^(2/3))
+    dv4(t) = v4_p/temp_v4(t)-(g/temp_v4(t))*numInt(temp_v4 , 0 , t)
+    v4(t) = numInt(dv4 , 0 , t)
+    #dv4(t) = lambda_m*exp(-phi_m*t)-g/phi_m
     du4(t) = (v4_m/3)-(2*m*phi_m/(3*c2))*((2*kappa_m-eta_m*exp(-phi_m*t))*real(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))-imag(conj(s)*(1+2*im*(kappa_m+mu_m))*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m+1,im*mu_m,im*eta_m*exp(-phi_m*t))))/imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))
-    v4(t) = (lambda_m/phi_m)*(1-exp(-phi_m*t))-(g/phi_m)*t
+    #v4(t) = (lambda_m/phi_m)*(1-exp(-phi_m*t))-(g/phi_m)*t
     u4(t) = (v4_m/3)*t-(4*m/(3*c2))*log(abs(imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))))
     x4(t) = (v4(t-t3)-u4(t-t3))/2 + d4_x
     y4(t) = (v4(t-t3)+u4(t-t3))/2 + d4_y
@@ -480,12 +480,12 @@ end
 function regime2(dt , print::Bool , track::Bool , PorV::Bool)
     #To do Position input true and velocity input false for "PorV"
 
-    #temp_u2(t) = exp((c1/m+c2*v2_p/(6*m))*t)*((abs(imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t)))))^(2/3))
-    #du2(t) = v2_m/temp_u2(t)-(g/temp_u2(t))*numInt(temp_u2 , 0 , t)
-    #u2(t) = numInt(du2 , 0 , t)
-    du2(t) = lambda_p*exp(-phi_p*t)-g/phi_p
+    temp_u2(t) = exp((c1/m+c2*v2_p/(6*m))*t)*((abs(imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t)))))^(2/3))
+    du2(t) = v2_m/temp_u2(t)-(g/temp_u2(t))*numInt(temp_u2 , 0 , t)
+    u2(t) = numInt(du2 , 0 , t)
+    #du2(t) = lambda_p*exp(-phi_p*t)-g/phi_p
     dv2(t) = (v2_p/3)+(2*m*phi_p/(3*c2))*((2*kappa_p-eta_p*exp(-phi_p*t))*real(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t)))-imag(conj(r)*(1+2*im*(kappa_p+mu_p))*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p+1,im*mu_p,im*eta_p*exp(-phi_p*t))))/imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t)))
-    u2(t) = (lambda_p/phi_p)*(1-exp(-phi_p*t))-(g/phi_p)*t
+    #u2(t) = (lambda_p/phi_p)*(1-exp(-phi_p*t))-(g/phi_p)*t
     v2(t) = (v2_p/3)*t+(4*m/(3*c2))*log(abs(imag(conj(r)*exp(-im*mu_p*phi_p*t)*rWhittaker(im*kappa_p,im*mu_p,im*eta_p*exp(-phi_p*t)))))
     x2(t) = (v2(t)-u2(t))/2
     y2(t) = (v2(t)+u2(t))/2
@@ -493,22 +493,22 @@ function regime2(dt , print::Bool , track::Bool , PorV::Bool)
     vy2(t) = (dv2(t)+du2(t))/2
     ryx2(t) = vy2(t)/vx2(t)-q
 
-    #temp_y3(t) = exp((c1/m+v3_x/2)*t)*imag(conj(p)*exp(-im*epsilon*omega_0*t)*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*t)))
-    #temp_vy3(t) = v3_y/temp_y3(t)-(g/temp_y3(t))*numInt(temp_y3 , 0 , t)
-    #vy3(t) = v3_y/temp_y3(t-t2)-(g/temp_y3(t-t2))*numInt(temp_y3 , t2 , t)
-    #y3(t) = numInt(temp_vy3 , t2 , t) + d3_y
+    temp_y3(t) = exp((c1/m+c2*v3_x/(2*m))*t)*imag(conj(p)*exp(-im*epsilon*omega_0*t)*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*t)))
+    temp_vy3(t) = v3_y/temp_y3(t)-(g/temp_y3(t))*numInt(temp_y3 , 0 , t)
+    vy3(t) = v3_y/temp_y3(t-t2)-(g/temp_y3(t-t2))*numInt(temp_y3 , 0 , t-t2)
+    y3(t) = numInt(temp_vy3 , 0 , t-t2) + d3_y
     vx3(t) = (v3_x/2)+(m*omega_0/(2*c2))*((2*delta-xi_0*exp(-omega_0*(t-t2)))*real(conj(p)*exp(-im*epsilon*omega_0*(t-t2))*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*(t-t2))))-imag(conj(p)*(1+2*im*(delta+epsilon))*exp(-im*epsilon*omega_0*(t-t2))*rWhittaker(im*delta+1,im*epsilon,im*xi_0*exp(-omega_0*(t-t2)))))/imag(conj(p)*exp(-im*epsilon*omega_0*(t-t2))*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*(t-t2))))
-    vy3(t) = gammay*exp(-omega_0*(t-t2))-g/omega_0
+    #vy3(t) = gammay*exp(-omega_0*(t-t2))-g/omega_0
     x3(t) = (v3_x/2)*(t-t2)+(m/c2)*log(abs(imag(conj(p)*exp(-im*epsilon*omega_0*(t-t2))*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*(t-t2))))))+d3_x
-    y3(t) = (gammay/omega_0)*(1-exp(-omega_0*(t-t2)))-(g/omega_0)*(t-t2)+d3_y
+    #y3(t) = (gammay/omega_0)*(1-exp(-omega_0*(t-t2)))-(g/omega_0)*(t-t2)+d3_y
     ryx3(t) = -vy3(t)/vx3(t)-q
 
-    #temp_v4(t) = exp((c1/m-c2*v4_m/(6*m))*t)*((abs(imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))))^(2/3))
-    #dv4(t) = v4_p/temp_v4(t)-(g/temp_v4(t))*numInt(temp_v4 , 0 , t)
-    #v4(t) = numInt(dv4 , 0 , t)
-    dv4(t) = lambda_m*exp(-phi_m*t)-g/phi_m
+    temp_v4(t) = exp((c1/m-c2*v4_m/(6*m))*t)*((abs(imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))))^(2/3))
+    dv4(t) = v4_p/temp_v4(t)-(g/temp_v4(t))*numInt(temp_v4 , 0 , t)
+    v4(t) = numInt(dv4 , 0 , t)
+    #dv4(t) = lambda_m*exp(-phi_m*t)-g/phi_m
     du4(t) = (v4_m/3)-(2*m*phi_m/(3*c2))*((2*kappa_m-eta_m*exp(-phi_m*t))*real(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))-imag(conj(s)*(1+2*im*(kappa_m+mu_m))*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m+1,im*mu_m,im*eta_m*exp(-phi_m*t))))/imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))
-    v4(t) = (lambda_m/phi_m)*(1-exp(-phi_m*t))-(g/phi_m)*t
+    #v4(t) = (lambda_m/phi_m)*(1-exp(-phi_m*t))-(g/phi_m)*t
     u4(t) = (v4_m/3)*t-(4*m/(3*c2))*log(abs(imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))))
     x4(t) = (v4(t-t3)-u4(t-t3))/2 + d4_x
     y4(t) = (v4(t-t3)+u4(t-t3))/2 + d4_y
@@ -763,22 +763,22 @@ end
 function regime3(dt , print::Bool , track::Bool , PorV::Bool)
     #To do Position input true and velocity input false for "PorV"
 
-    #temp_y3(t) = exp((c1/m+v3_x/2)*t)*imag(conj(p)*exp(-im*epsilon*omega_0*t)*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*t)))
-    #temp_vy3(t) = v3_y/temp_y3(t)-(g/temp_y3(t))*numInt(temp_y3 , 0 , t)
-    #vy3(t) = v3_y/temp_y3(t-t2)-(g/temp_y3(t-t2))*numInt(temp_y3 , 0 , t-t2)
-    #y3(t) = numInt(temp_vy3 , 0 , t)
+    temp_y3(t) = exp((c1/m+c2*v3_x/(2*m))*t)*imag(conj(p)*exp(-im*epsilon*omega_0*t)*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*t)))
+    temp_vy3(t) = v3_y/temp_y3(t)-(g/temp_y3(t))*numInt(temp_y3 , 0 , t)
+    vy3(t) = v3_y/temp_y3(t)-(g/temp_y3(t))*numInt(temp_y3 , 0 , t)
+    y3(t) = numInt(temp_vy3 , 0 , t)
     vx3(t) = (v3_x/2)+(m*omega_0/(2*c2))*((2*delta-xi_0*exp(-omega_0*(t)))*real(conj(p)*exp(-im*epsilon*omega_0*(t))*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*(t))))-imag(conj(p)*(1+2*im*(delta+epsilon))*exp(-im*epsilon*omega_0*(t))*rWhittaker(im*delta+1,im*epsilon,im*xi_0*exp(-omega_0*(t)))))/imag(conj(p)*exp(-im*epsilon*omega_0*(t))*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*(t))))
-    vy3(t) = gammay*exp(-omega_0*(t))-g/omega_0
+    #vy3(t) = gammay*exp(-omega_0*(t))-g/omega_0
     x3(t) = (v3_x/2)*(t)+(m/c2)*log(abs(imag(conj(p)*exp(-im*epsilon*omega_0*(t))*rWhittaker(im*delta,im*epsilon,im*xi_0*exp(-omega_0*(t))))))
-    y3(t) = (gammay/omega_0)*(1-exp(-omega_0*(t)))-(g/omega_0)*(t)
+    #y3(t) = (gammay/omega_0)*(1-exp(-omega_0*(t)))-(g/omega_0)*(t)
     ryx3(t) = -vy3(t)/vx3(t)-q
 
-    #temp_v4(t) = exp((c1/m-c2*v4_m/(6*m))*t)*((abs(imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))))^(2/3))
-    #dv4(t) = v4_p/temp_v4(t)-(g/temp_v4(t))*numInt(temp_v4 , 0 , t)
-    #v4(t) = numInt(dv4 , 0 , t)
-    dv4(t) = lambda_m*exp(-phi_m*t)-g/phi_m
+    temp_v4(t) = exp((c1/m-c2*v4_m/(6*m))*t)*((abs(imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))))^(2/3))
+    dv4(t) = v4_p/temp_v4(t)-(g/temp_v4(t))*numInt(temp_v4 , 0 , t)
+    v4(t) = numInt(dv4 , 0 , t)
+    #dv4(t) = lambda_m*exp(-phi_m*t)-g/phi_m
     du4(t) = (v4_m/3)-(2*m*phi_m/(3*c2))*((2*kappa_m-eta_m*exp(-phi_m*t))*real(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))-imag(conj(s)*(1+2*im*(kappa_m+mu_m))*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m+1,im*mu_m,im*eta_m*exp(-phi_m*t))))/imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))
-    v4(t) = (lambda_m/phi_m)*(1-exp(-phi_m*t))-(g/phi_m)*t
+    #4(t) = (lambda_m/phi_m)*(1-exp(-phi_m*t))-(g/phi_m)*t
     u4(t) = (v4_m/3)*t-(4*m/(3*c2))*log(abs(imag(conj(s)*exp(-im*mu_m*phi_m*t)*rWhittaker(im*kappa_m,im*mu_m,im*eta_m*exp(-phi_m*t)))))
     x4(t) = (v4(t-t3)-u4(t-t3))/2 + d4_x
     y4(t) = (v4(t-t3)+u4(t-t3))/2 + d4_y

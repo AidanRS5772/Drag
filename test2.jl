@@ -5,6 +5,10 @@ include("projwDrag.jl")
 include("plotProjDrag.jl")
 
 tick()
-out = errorTiTh1(.625,.95,36)
+errorData = errorTpV1(25,200,100)
 tock()
-println(out)
+println("\n\n Error Data: \n\n")
+println(errorData)
+
+
+

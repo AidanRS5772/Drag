@@ -173,7 +173,7 @@ end
 function rWhittaker(a,b,x)
     sum = 0
     n = 0
-    while true
+    while n < 1000
         val = (GammaAll(b-a+1/2+n)/GammaAll(2*b+1+n))*(big(x)^n/GammaAll(n+1))
         sum += val
         if abs(val/sum) < 10.0^(-30)
@@ -221,6 +221,7 @@ function instInputs(;theta = .95 , velocity = 10.0 , mass = .1 , diameter = .1)
     global c1 = linC*D
     global c2 = quadC*D^2
 end
+
 
 function regime1(dt , print::Bool , track::Bool , PorV::Bool)
     #To do Position input true and velocity input false for "PorV"
@@ -280,7 +281,7 @@ function regime1(dt , print::Bool , track::Bool , PorV::Bool)
     zeta = sqrt(4*g*c2*m - c1^2) / (2*m*omega_p)
     k = -(π/(omega_p*sinh(π*zeta)))*(Bessel(xi_p , im*zeta)*((c2*v0*sinpi(θ/2)/m)+(c1/(2*m))-im*zeta*omega_p)+xi_p*omega_p*Bessel(xi_p,im*zeta-1))
     
-    t1 = forwardEval(rxy1 , 0 , .05)
+    t1 = forwardEval(rxy1 , 0 , .1)
 
     d2_x = x1(t1)
     d2_y = y1(t1)
@@ -293,8 +294,8 @@ function regime1(dt , print::Bool , track::Bool , PorV::Bool)
     mu_p = sqrt(12*c2*g*m*phi_p^2+9*(c2^2)*(g^2)-4*(c1^2)*(phi_p^2))/(4*m*phi_p^2)
     r = -(1/(2*eta_p*mu_p))*(rWhittaker(im*kappa_p,im*mu_p,im*eta_p)*((c2/(phi_p*m))*v2_p-im*(2*kappa_p-eta_p))+(1+im*2*(kappa_p+mu_p))*rWhittaker(im*kappa_p+1,im*mu_p,im*eta_p))
     
-    t2 = forwardEval(ryx2 , t1 , .05)
-    
+    t2 = forwardEval(ryx2 , t1 , .01)
+
     d3_x = x2(t2)
     d3_y = y2(t2)
     v3_x = vx2(t2)
@@ -306,8 +307,8 @@ function regime1(dt , print::Bool , track::Bool , PorV::Bool)
     epsilon = sqrt(2*(c2*g)^2-(c1*omega_0)^2)/(2*m*(omega_0^2))
     p = -(1/(2*xi_0*epsilon))*(rWhittaker(im*delta,im*epsilon,im*xi_0)*((c2*v3_x/(m*omega_0))-im*(2*delta-xi_0))+(1+2*im*(delta+epsilon))*rWhittaker(im*delta+1,im*epsilon,im*xi_0))
     
-    t3 = forwardEval(ryx3 , t2 , .05)
-    
+    t3 = forwardEval(ryx3 , t2 , .01)
+
     d4_x = x3(t3)
     d4_y = y3(t3)
     v4_p = vy3(t3)+vx3(t3)
@@ -319,8 +320,8 @@ function regime1(dt , print::Bool , track::Bool , PorV::Bool)
     mu_m = sqrt(-12*c2*g*m*phi_m^2+9*(c2^2)*(g^2)-4*(c1^2)*(phi_m^2))/(4*m*phi_m^2)
     s = (1/(2*eta_m*mu_m))*(rWhittaker(im*kappa_m,im*mu_m,im*eta_m)*((c2/(phi_m*m))*v4_m+im*(2*kappa_m-eta_m))-(1+im*2*(kappa_m+mu_m))*rWhittaker(im*kappa_m+1,im*mu_m,im*eta_m))
 
-    t4 = forwardEval(rxy4 , t3 , .05)
-    
+    t4 = forwardEval(rxy4 , t3 , .01)
+
     d5_x = x4(t4)
     d5_y = y4(t4)
     v5_y = vy4(t4)
@@ -785,12 +786,12 @@ function regime3(dt , print::Bool , track::Bool , PorV::Bool)
     vx4(t) = (dv4(t-t3)-du4(t-t3))/2
     vy4(t) = (dv4(t-t3)+du4(t-t3))/2
     rxy4(t) = -vx4(t)/vy4(t)-q
-
+    
     vx5(t) = chi_m*exp(-c1*(t-t4)/(2*c2))/(l_p*Bessel(xi_m*exp(-omega_m*(t-t4)),Omega)+l_m*Bessel(xi_m*exp(-omega_m*(t-t4)),-Omega))
     vy5(t) = (c1/(2*c2))+(m*xi_m*omega_m/(2*c2))*exp(-omega_m*(t-t4))*(l_p*(Bessel(xi_m*exp(-omega_m*(t-t4)),Omega-1)-Bessel(xi_m*exp(-omega_m*(t-t4)),Omega+1))+l_m*(Bessel(xi_m*exp(-omega_m*(t-t4)),-Omega-1)-Bessel(xi_m*exp(-omega_m*(t-t4)),-Omega+1)))/(l_p*Bessel(xi_m*exp(-omega_m*(t-t4)),Omega)+l_m*Bessel(xi_m*exp(-omega_m*(t-t4)),-Omega))
     x5(t) = numInt(vx5 , t4 , t) + d5_x
     y5(t) = (c1/(2*c2))*(t-t4)-(m/c2)*log(abs(l_p*Bessel(xi_m*exp(-omega_m*(t-t4)),Omega)+l_m*Bessel(xi_m*exp(-omega_m*(t-t4)),-Omega)))+d5_y
-
+    
     q = .677269
     
     v3_x = v0*cospi(θ/2)
@@ -886,18 +887,20 @@ function regime3(dt , print::Bool , track::Bool , PorV::Bool)
                 if y3(t) < 0
                     break
                 end
-            elseif t3 < t <= t4
+            elseif t3 < t
                 push!(x,x4(t))
                 push!(y,y4(t))
                 if y4(t) < 0
                     break
                 end
+            #=
             elseif t4 < t
                 push!(x,x5(t))
                 push!(y,y5(t))
                 if y5(t) < 0
                     break
                 end
+            =#
             end
 
             

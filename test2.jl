@@ -5,6 +5,6 @@ include("projwDrag.jl")
 include("plotProjDrag.jl")
 
 tick()
-out = errorRV3(10.0,200.0,100)
+out = errorTiTh1(.625,.95,36)
 tock()
 println(out)

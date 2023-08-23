@@ -5,7 +5,7 @@ using TickTock
 include("plotProjDrag.jl")
 include("projwDrag.jl")
 
-instInputs()
+instInputs( angle = .5)
 s1, s2, s3 = plotProj()
 p1 = plot(s1)
 p2 = plot(s2)

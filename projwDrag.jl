@@ -431,6 +431,9 @@ function preCalc(;print = true)
         d5Vals(x4(t4) , y4(t4) , vx4(t4) , track = print)
 
     elseif 2*acot(q)/π >= θ > 2*atan(q)/π
+
+        global t1 = 0
+
         d2Vals(0, 0 , v0 * cospi(θ / 2), v0 * sinpi(θ / 2) , track = print)
         global t2 = secantRF(r2 , 0)
         if print println("t2 = " , t2 , "\n") end
@@ -442,9 +445,11 @@ function preCalc(;print = true)
         if print println("t4 = " , t4 , "\n") end
         d5Vals(x4(t4) , y4(t4) , vx4(t4) , track = print)
 
-        global t1 = 0
-
     elseif 2*atan(q)/π >= θ > 0
+
+        global t1 = 0
+        global t2 = 0
+        
         d3Vals(0, 0 , v0 * cospi(θ / 2), v0 * sinpi(θ / 2) , track = print)
         global t3 = secantRF(r3 , 0)
         if print println("t3 = " , t3 , "\n") end
@@ -453,8 +458,6 @@ function preCalc(;print = true)
         if print println("t4 = " , t4 , "\n") end
         d5Vals(x4(t4) , y4(t4) , vx4(t4) , track = print)
 
-        global t1 = 0
-        global t2 = 0
     end
     
 end

@@ -1,11 +1,12 @@
 using PlotlyJS
 using SpecialFunctions
-using QuadGK
 using TickTock
-include("plotProjDrag.jl")
+using Cubature
 include("projwDrag.jl")
+include("plotProjDrag.jl")
+include("dataAnalysis.jl")
 
-instInputs( angle = .5)
+instInputs(angle = .4455555 , velocity = 113.33333)
 s1, s2, s3 = plotProj()
 p1 = plot(s1)
 p2 = plot(s2)

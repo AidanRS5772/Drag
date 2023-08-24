@@ -4,7 +4,7 @@ using Printf
 include("projwDrag.jl")
 
 function plotProj(; dt=2^-5, track=true)
-    sim = qDSim(track=false)
+    sim = qDSim()
     simX = sim[1]
     simY = sim[2]
     simT = sim[3]

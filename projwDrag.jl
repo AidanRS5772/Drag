@@ -8,11 +8,7 @@ function dragEq(a, b)
     return -(c1 / m) * a - (c2 / m) * a * sqrt(a^2 + b^2)
 end
 
-function qDSim(; dt=2.0^-16, track=true)
-    if track
-        println("\nSimulation:\n")
-    end
-
+function qDSim(; dt=2.0^-16)
     time = 0
     t = []
     y = []
@@ -61,7 +57,9 @@ function qDSim(; dt=2.0^-16, track=true)
     return x, y, t, vX, vY
 end
 
-function secantRF(f::Function, init)
+function secantRF(f::Function, init ; track = false)
+    if (track) println("\nSecant Root Finder:\n") end
+
     tol = 1e-8
 
     p0 = init
@@ -70,10 +68,10 @@ function secantRF(f::Function, init)
 
     fp0 = f(p0)
     fp1 = f(p1)
-
+    if (track) println("t = " , init) end
     while abs(p1 - p0) > tol
         p2 = p1 - fp1 * ((p1 - p0) / (fp1 - fp0))
-
+        if (track) println("t = " , p2) end
         p0 = p1
         p1 = p2
 
@@ -182,6 +180,22 @@ function rWhittaker(a, b, x)
 end
 
 function instInputs(; angle=0.9, velocity=10, diameter=0.2, mass=1)
+    if angle >= 1 || angle <= 0
+        DomainError("Launch angle must be in (0 , 1) and angle = $(angle)")
+    end
+
+    if v0 <= 0 
+        DomainError("Lauch velocity must be greater then 0")
+    end
+
+    if D <= 0
+        DomainError("Object size must be greater then 0")
+    end
+
+    if m <= 0
+        DomainError("Object mass must be greater then 0")
+    end
+
     global θ = convert(Float64 , angle)
     global v0 = convert(Float64 , velocity)
     global D = convert(Float64 , diameter)
@@ -252,7 +266,7 @@ function dv2(t)
     M2 = conj(r) * exp(-im * ϕp * μp * t) * rWhittaker(im * κp + 1, im * μp, im * ηp * exp(-ϕp * t))
     return v2p / 3 + (2 * m * ϕp / (3 * c2)) * ((2 * κp - ηp * exp(-ϕp * t)) * cot(angle(M1)) - imag((1 + 2 * im * (μp + κp)) * M2) / imag(M1))
 end
-v2(t) = v2p * t / 3 + (4 * m / (3 * c2)) * log(imag(conj(r) * exp(-im * ϕp * μp * t) * rWhittaker(im * κp, im * μp, im * ηp * exp(-ϕp * t))))
+v2(t) = v2p * t / 3 + (4 * m / (3 * c2)) * log(abs(imag(conj(r) * exp(-im * ϕp * μp * t) * rWhittaker(im * κp, im * μp, im * ηp * exp(-ϕp * t)))))
 
 
 vx2(t) = (dv2(t - t1) - du2(t - t1)) / 2
@@ -341,7 +355,7 @@ function du4(t)
     M2 = conj(s) * exp(-im * ϕm * μm * t) * rWhittaker(im * κm + 1, im * μm, im * ηm * exp(-ϕm * t))
     return u4p / 3 - (2 * m * ϕm / (3 * c2)) * ((2 * κm - ηm * exp(-ϕm * t)) * cot(angle(M1)) - imag((1 + 2 * im * (μm + κm)) * M2) / imag(M1))
 end
-u4(t) = u4p * t / 3 - (4 * m / (3 * c2)) * log(imag(conj(s) * exp(-im * ϕm * μm * t) * rWhittaker(im * κm, im * μm, im * ηm * exp(-ϕm * t))))
+u4(t) = u4p * t / 3 - (4 * m / (3 * c2)) * log(abs(imag(conj(s) * exp(-im * ϕm * μm * t) * rWhittaker(im * κm, im * μm, im * ηm * exp(-ϕm * t)))))
 
 vx4(t) = (dv4(t - t3) - du4(t - t3)) / 2
 vy4(t) = (dv4(t - t3) + du4(t - t3)) / 2
@@ -410,6 +424,62 @@ function projV(t)
         return vx4(t), vy4(t)
     else t4 < t
         return vx5(t), vy5(t)
+    end
+end
+
+function projPx(t)
+    if t <= t1
+        return x1(t)
+    elseif t1 < t <= t2
+        return x2(t)
+    elseif t2 < t <= t3
+        return x3(t)
+    elseif t3 < t <= t4
+        return x4(t)
+    elseif t4 < t
+        return x5(t)
+    end
+end
+
+function projPy(t)
+    if t <= t1
+        return y1(t)
+    elseif t1 < t <= t2
+        return y2(t)
+    elseif t2 < t <= t3
+        return y3(t)
+    elseif t3 < t <= t4
+        return y4(t)
+    elseif t4 < t
+        return y5(t)
+    end
+end
+
+function projVx(t)
+    if t <= t1
+        return vx1(t)
+    elseif t1 < t <= t2
+        return vx2(t)
+    elseif t2 < t <= t3
+        return vx3(t)
+    elseif t3 < t <= t4
+        return vx4(t)
+    else t4 < t
+        return vx5(t)
+    end
+end
+
+function projVy(t)
+    if t <= t1
+        return vy1(t)
+    elseif t1 < t <= t2
+        return vy2(t)
+    elseif t2 < t <= t3
+        return vy3(t)
+    elseif t3 < t <= t4
+        return vy4(t)
+    else t4 < t
+        return vy5(t)
     end
 end
 

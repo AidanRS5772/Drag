@@ -3,14 +3,19 @@ using SpecialFunctions
 using TickTock
 using Cubature
 using Random
+using DataFrames
+using CSV
 include("projwDrag.jl")
 include("plotProjDrag.jl")
 include("dataAnalysis.jl")
 
-instInputs()
-simData = qDSim()
-simYp , idxYp = findmax(simData[2])
-simTp = simData[3][idxYp]
+n = 5
+mat = rand(5, 5)
+df = DataFrame(mat , :auto)
 
-println(simYp)
-println(simTp)
+col_label = ["col = $x" for x in 1:n]
+row_label = ["row = $x" for x in 1:n]
+rename!(df , col_label)
+df = hcat(DataFrame(RowNames = row_label), df)
+CSV.write("Data/test.csv", df)
+println(df)

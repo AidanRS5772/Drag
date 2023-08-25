@@ -5,18 +5,18 @@ using TickTock
 include("plotProjDrag.jl")
 include("projwDrag.jl")
 
-function newtonsRF(f::Function , df::Function , init)
-    println("\nNewtons Root Finder:\n")
+function newtonsRF(f::Function , df::Function , init ; track = true)
+    if (track) println("\nNewtons Root Finder:\n") end
 
     tol = 1e-8
     x1 = init+2*tol
     x2 = init
 
-    println("t = " , x2)
+    if (track) println("t = " , x2) end
     while abs(x2-x1) > tol
         x1 = x2
         x2 = x1 - f(x1)/df(x1)
-        println("t = " , x2)
+        if (track) println("t = " , x2) end
     end
 
     return x2
@@ -62,13 +62,9 @@ end
 function avAnalysis(G , n)
     time_step = 2.0^-18
 
-    absErrorTFData = Matrix(undef , n , n)
     relErrorTFData = Matrix(undef , n , n)
-    absErrorRangeData = Matrix(undef , n , n)
     relErrorRangeData = Matrix(undef , n , n)
-    absErrorTPData = Matrix(undef , n , n)
     relErrorTPData = Matrix(undef , n , n)
-    absErrorYPData = Matrix(undef , n , n)
     relErrorYPData = Matrix(undef , n , n) 
 
     for i in 1:n
@@ -93,9 +89,9 @@ function avAnalysis(G , n)
 
             preCalc(print = false)
 
-            apxTf = newtonsRF(projPy , projVy , simTf)
+            apxTf = newtonsRF(projPy , projVy , simTf ; track = false)
             apxXr = projPx(apxTf)
-            apxTp = secantRF(projVy , simTp; track = true)
+            apxTp = secantRF(projVy , simTp; track = false)
             apxYp = projPy(apxTp)
 
             println("\napx tf = ",apxTf)
@@ -103,34 +99,23 @@ function avAnalysis(G , n)
             println("apx tp = ",apxTp)
             println("apx yp = ",apxYp)
 
-            absRangeError = abs(apxXr - simXr)
             relRangeError = abs(apxXr - simXr)/simXr
-            absTfError = abs(apxTf - simTf)
             relTfError = abs(apxTf - simTf)/simTf
-            absTpError = abs(apxTp - simTp)
             relTpError = abs(apxTp - simTp)/simTp
-            absYpError = abs(apxYp - simYp)
             relYpError = abs(apxYp - simYp)/simYp
 
-            println("\nabs error tf = ", absTfError)
-            println("rel error tf = ", relTfError)
-            println("abs error rng = " , absRangeError)
+            println("\nrel error tf = ", relTfError)
             println("rel error rng = " , relRangeError)
-            println("abs error tp = ", absTpError)
             println("rel error tp = ", relTpError)
-            println("abs error yp = ", absYpError)
             println("rel error yp = ", relYpError)
 
-            absErrorTFData[i , j] = absTfError
+            
             relErrorTFData[i , j] = relTfError
-            absErrorRangeData[i , j] = absRangeError
             relErrorRangeData[i , j] = relRangeError
-            absErrorTPData[i , j] = absTpError
             relErrorTPData[i , j] = relTpError
-            absErrorYPData[i , j] = absYpError
             relErrorYPData[i , j] = relYpError
         end
     end
 
-    return absErrorTFData , relErrorTFData , absErrorRangeData , relErrorRangeData , absErrorTPData , relErrorTPData , absErrorYPData , relErrorYPData
+    return relErrorTFData , relErrorRangeData , relErrorTPData , relErrorYPData
 end

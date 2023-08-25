@@ -141,8 +141,10 @@ function Bessel(z, x)
     end
 end
 
-function rWhitCoef(a, b, x, n)
-    if n <= 20
+function rWhitCoef(a, b, x, n , useBig)
+    if useBig
+        return exp(big(loggamma(b - a + 1 / 2 + n) - loggamma(2 * b + 1 + n))) * (big(x)^n / factorial(big(n)))
+    elseif n <= 20
         out = (gamma(b - a + 1 / 2 + n) / gamma(2 * b + 1 + n)) * (x^n / factorial(n))
         if isinf(out) || isnan(out)
             return exp(big(loggamma(b - a + 1 / 2 + n) - loggamma(2 * b + 1 + n))) * (big(x)^n / factorial(n))
@@ -165,34 +167,41 @@ function rWhittaker(a, b, x)
     n = 0
 
     mult = exp(big(loggamma(2 * b + 1) - loggamma(b - a + 1 / 2)))
+    abs_mult = abs(mult)
+
+    useBig = false
+    if -log10(abs_mult) >= 305
+        useBig = true
+    end
 
     while true
-        val = rWhitCoef(a, b, x, n)
+        val = rWhitCoef(a, b, x, n , useBig)
         sum += val
         brp = abs(val)
-        if brp < (1e-15) / abs(mult)
+        if brp < (1e-15) / abs_mult
             break
         end
         n += 1
     end
-
-    return convert(ComplexF64, sqrt(x) * exp(-x / 2) * mult * sum)
+    factor = sqrt(x) * exp(-x / 2) * mult
+    out = factor * sum
+    return convert(ComplexF64, out)
 end
 
-function instInputs(; angle=0.9, velocity=10, diameter=0.2, mass=1)
+function instInputs(; angle=0.9, velocity=10.0, diameter=0.2, mass=1.0)
     if angle >= 1 || angle <= 0
         DomainError("Launch angle must be in (0 , 1) and angle = $(angle)")
     end
 
-    if v0 <= 0 
+    if velocity <= 0 
         DomainError("Lauch velocity must be greater then 0")
     end
 
-    if D <= 0
+    if diameter <= 0
         DomainError("Object size must be greater then 0")
     end
 
-    if m <= 0
+    if mass <= 0
         DomainError("Object mass must be greater then 0")
     end
 

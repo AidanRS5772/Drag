@@ -2,46 +2,66 @@ using PlotlyJS
 using SpecialFunctions
 using TickTock
 using Cubature
+using DataFrames
+using CSV
 include("projwDrag.jl")
 include("plotProjDrag.jl")
 include("dataAnalysis.jl")
 
 
-n = 5
-angleVals = LinRange(.03 , .97 , n)
-velVals = LinRange(5 , 200 , n)
+n = 100
+angleVals = LinRange(.01 , .99 , n)
+velVals = LinRange(10 , 200 , n)
+
+a_label = ["θ = $(x)" for x in angleVals]
+v0_label = ["v0 = $(x)" for x in velVals]
 
 avGrid = grid(angleVals , velVals , n)
 
+println(avGrid)
+
 ErrorData = avAnalysis(avGrid , n)
 
-println("abs error tf : ")
-display(ErrorData[1])
-println("rel error tf : ")
-display(ErrorData[2])
+println("\nReletive Error Time of Flight : \n")
+tfData = DataFrame(ErrorData[1] , :auto)
+rename!(tfData , a_label)
+tfData = hcat(DataFrame(Velocity_Vals = v0_label), tfData)
 
-println("abs error rng : ")
-display(ErrorData[3])
-println("rel error rng : ")
-display(ErrorData[4])
+CSV.write("Data/RE_timeFlight.csv" , tfData)
+println(tfData)
 
-println("abs error tp : ")
-display(ErrorData[5])
-println("rel error tp : ")
-display(ErrorData[6])
+println("\nReletive Error Range : \n")
+rngData = DataFrame(ErrorData[2] , :auto)
+rename!(rngData , a_label)
+rngData = hcat(DataFrame(Velocity_Vals = v0_label), rngData)
 
-println("abs error yp : ")
-display(ErrorData[7])
-println("rel error yp : ")
-display(ErrorData[8])
+CSV.write("Data/RE_range.csv" , rngData)
+println(rngData)
 
-p1 = plot(surface(z = ErrorData[1] , x = angleVals , y = velVals) , Layout(title = "Absolute Error Final Time"))
-p2 = plot(surface(z = ErrorData[2] , x = angleVals , y = velVals) , Layout(title = "Reletive Error Final Time"))
-p3 = plot(surface(z = ErrorData[3] , x = angleVals , y = velVals) , Layout(title = "Absolute Error Range"))
-p4 = plot(surface(z = ErrorData[4] , x = angleVals , y = velVals) , Layout(title = "Reletive Error Range"))
-p5 = plot(surface(z = ErrorData[5] , x = angleVals , y = velVals) , Layout(title = "Absolute Error Peak Time"))
-p6 = plot(surface(z = ErrorData[6] , x = angleVals , y = velVals) , Layout(title = "Reletive Error Peak Time"))
-p7 = plot(surface(z = ErrorData[7] , x = angleVals , y = velVals) , Layout(title = "Absolute Error Peak Height"))
-p8 = plot(surface(z = ErrorData[2] , x = angleVals , y = velVals) , Layout(title = "Reletive Error Peak Height"))
+println("\nReletive Error Time to Peak : \n")
+tpData = DataFrame(ErrorData[3] , :auto)
+rename!(tpData , a_label)
+tpData = hcat(DataFrame(Velocity_Vals = v0_label), tpData)
 
-[p1 p2 p3 p4 p5 p6 p7 p8]
+CSV.write("Data/RE_timePeak.csv" , tpData)
+println(tpData)
+
+println("\nReletive Error Peak Height : \n")
+ypData = DataFrame(ErrorData[4] , :auto)
+rename!(ypData , a_label)
+ypData = hcat(DataFrame(Velocity_Vals = v0_label), ypData)
+
+CSV.write("Data/RE_heightPeak.csv" , ypData)
+println(ypData)
+
+p1 = plot(surface(z = ErrorData[1] , x = angleVals , y = velVals) , Layout(title = "Reletive Error Final Time"))
+
+p2 = plot(surface(z = ErrorData[2] , x = angleVals , y = velVals) , Layout(title = "Reletive Error Range"))
+
+p3 = plot(surface(z = ErrorData[3] , x = angleVals , y = velVals) , Layout(title = "Reletive Error Peak Time"))
+
+p4 = plot(surface(z = ErrorData[4] , x = angleVals , y = velVals) , Layout(title = "Reletive Error Peak Height"))
+
+
+[p1 p2 ; p3 p4]
+

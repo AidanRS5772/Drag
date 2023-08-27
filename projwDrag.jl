@@ -57,8 +57,10 @@ function qDSim(; dt=2.0^-16)
     return x, y, t, vX, vY
 end
 
-function secantRF(f::Function, init ; track = false)
-    if (track) println("\nSecant Root Finder:\n") end
+function secantRF(f::Function, init; track=false)
+    if (track)
+        println("\nSecant Root Finder:\n")
+    end
 
     tol = 1e-8
 
@@ -68,10 +70,14 @@ function secantRF(f::Function, init ; track = false)
 
     fp0 = f(p0)
     fp1 = f(p1)
-    if (track) println("t = " , init) end
+    if (track)
+        println("t = ", init)
+    end
     while abs(p1 - p0) > tol
         p2 = p1 - fp1 * ((p1 - p0) / (fp1 - fp0))
-        if (track) println("t = " , p2) end
+        if (track)
+            println("t = ", p2)
+        end
         p0 = p1
         p1 = p2
 
@@ -125,6 +131,7 @@ function Bessel(z, x)
     n = 0
 
     while true
+        
         val = ((-1)^n) * besselCoef(z, x, n)
         sum += val
         brp = abs(val)
@@ -141,7 +148,7 @@ function Bessel(z, x)
     end
 end
 
-function rWhitCoef(a, b, x, n , useBig)
+function rWhitCoef(a, b, x, n, useBig)
     if useBig
         return exp(big(loggamma(b - a + 1 / 2 + n) - loggamma(2 * b + 1 + n))) * (big(x)^n / factorial(big(n)))
     elseif n <= 20
@@ -175,7 +182,7 @@ function rWhittaker(a, b, x)
     end
 
     while true
-        val = rWhitCoef(a, b, x, n , useBig)
+        val = rWhitCoef(a, b, x, n, useBig)
         sum += val
         brp = abs(val)
         if brp < (1e-15) / abs_mult
@@ -193,7 +200,7 @@ function instInputs(; angle=0.9, velocity=10.0, diameter=0.2, mass=1.0)
         DomainError("Launch angle must be in (0 , 1) and angle = $(angle)")
     end
 
-    if velocity <= 0 
+    if velocity <= 0
         DomainError("Lauch velocity must be greater then 0")
     end
 
@@ -205,10 +212,10 @@ function instInputs(; angle=0.9, velocity=10.0, diameter=0.2, mass=1.0)
         DomainError("Object mass must be greater then 0")
     end
 
-    global θ = convert(Float64 , angle)
-    global v0 = convert(Float64 , velocity)
-    global D = convert(Float64 , diameter)
-    global m = convert(Float64 , mass)
+    global θ = convert(Float64, angle)
+    global v0 = convert(Float64, velocity)
+    global D = convert(Float64, diameter)
+    global m = convert(Float64, mass)
 
     global c2 = (0.25) * D^2
     global c1 = (1.6e-4) * D
@@ -249,7 +256,7 @@ function d2Vals(x, y, vx, vy; track=true)
     global ηp = 3 * c2 * λp / (2 * ϕp * m)
     global κp = 3 * c2 * g / (4 * m * ϕp^2)
     global μp = √(9 * c2^2 * g^2 + 12 * c2 * g * m * ϕp^2 - 4 * c1^2 * ϕp^2) / (4 * m * ϕp^2)
-    global r = -(1 / (2 * ηp * μp)) * (rWhittaker(im * κp, im * μp, im * ηp) * (c2 * v2p / (ϕp * m) - im * (2 * κp - ηp)) + (1 + 2 * im * (μp + κp)) * rWhittaker(im * κp + 1, im * μp, im * ηp))
+    global r = -(1/ (2 * ηp * μp)) * (rWhittaker(im * κp, im * μp, im * ηp) * (c2 * v2p / (ϕp * m) - im * (2 * κp - ηp)) + (1 + 2 * im * (μp + κp)) * rWhittaker(im * κp + 1, im * μp, im * ηp))
 
     if track
         println("d2x = ", d2x)
@@ -372,7 +379,7 @@ x4(t) = (v4(t - t3) - u4(t - t3)) / 2 + d4x
 y4(t) = (v4(t - t3) + u4(t - t3)) / 2 + d4y
 r4(t) = vx4(t) + q * vy4(t)
 
-function d5Vals(x, y, vx ; track = true)
+function d5Vals(x, y, vx; track=true)
     global d5x = x
     global d5y = y
     global v5x = vx
@@ -380,10 +387,10 @@ function d5Vals(x, y, vx ; track = true)
     global ωm = (c1 - c2 * v5y) / m
     global ξm = c2 * v5x / (√2 * ωm * m)
     global Ω = √(4 * g * c2 * m + c1^2) / (2 * m * ωm)
-    global lp = -(π / (2 * sin(π * Ω))) * (Bessel(-Ω, ξm) * ((c1 - 2 * c2 * v5y) / (2 * m * ωm) + Ω) + ξm * Bessel(-Ω - 1, ξm))
-    global lm = (π / (2 * sin(π * Ω))) * (Bessel(Ω, ξm) * ((c1 - 2 * c2 * v5y) / (2 * m * ωm) - Ω) + ξm * Bessel(Ω - 1, ξm))
+    global lp = -(π / (2 * sin(π * Ω))) * (besselj(-Ω, ξm) * ((c1 - 2 * c2 * v5y) / (2 * m * ωm) + Ω) + ξm * besselj(-Ω - 1, ξm))
+    global lm = (π / (2 * sin(π * Ω))) * (besselj(Ω, ξm) * ((c1 - 2 * c2 * v5y) / (2 * m * ωm) - Ω) + ξm * besselj(Ω - 1, ξm))
 
-    if track 
+    if track
         println("d5x = ", d5x)
         println("d5y = ", d5y)
         println("v5x = ", v5x)
@@ -397,16 +404,16 @@ function d5Vals(x, y, vx ; track = true)
     end
 end
 
-psvx5(t) = v5x * exp(-(c1 / (2 * c2)) * t) / (lp * Bessel(Ω, ξm * exp(-ωm * t)) + lm * Bessel(-Ω, ξm * exp(-ωm * t)))
+psvx5(t) = v5x * exp(-(c1 / (2 * c2)) * t) / (lp * besselj(Ω, ξm * exp(-ωm * t)) + lm * besselj(-Ω, ξm * exp(-ωm * t)))
 psx5(t) = d1Int(psvx5, t)
 
-psvy5(t) = (c1 / (2 * c2)) - (m * ξm * ωm / (2 * c2)) * exp(-ωm * t) * (lp * (Bessel(Ω + 1, ξm * exp(-ωm * t)) - Bessel(Ω - 1, ξm * exp(-ωm * t))) + lm * (Bessel(-Ω + 1, ξm * exp(-ωm * t)) - Bessel(-Ω - 1, ξm * exp(-ωm * t)))) / (lp * Bessel(Ω, ξm * exp(-ωm * t)) + lm * Bessel(-Ω, ξm * exp(-ωm * t)))
-psy5(t) = (c1 * t / (2 * c2)) - (m / c2) * log(lp * Bessel(Ω, ξm * exp(-ωm * t)) + lm * Bessel(-Ω, ξm * exp(-ωm * t)))
+psvy5(t) = (c1 / (2 * c2)) - (m * ξm * ωm / (2 * c2)) * exp(-ωm * t) * (lp * (besselj(Ω + 1, ξm * exp(-ωm * t)) - besselj(Ω - 1, ξm * exp(-ωm * t))) + lm * (besselj(-Ω + 1, ξm * exp(-ωm * t)) - besselj(-Ω - 1, ξm * exp(-ωm * t)))) / (lp * besselj(Ω, ξm * exp(-ωm * t)) + lm * besselj(-Ω, ξm * exp(-ωm * t)))
+psy5(t) = (c1 * t / (2 * c2)) - (m / c2) * log(lp * besselj(Ω, ξm * exp(-ωm * t)) + lm * besselj(-Ω, ξm * exp(-ωm * t)))
 
-vx5(t) = psvx5(t-t4)
-vy5(t) = psvy5(t-t4)
-x5(t) = psx5(t-t4) + d5x
-y5(t) = psy5(t-t4) + d5y
+vx5(t) = psvx5(t - t4)
+vy5(t) = psvy5(t - t4)
+x5(t) = psx5(t - t4) + d5x
+y5(t) = psy5(t - t4) + d5y
 
 function projP(t)
     if t <= t1
@@ -418,7 +425,7 @@ function projP(t)
     elseif t3 < t <= t4
         return x4(t), y4(t)
     elseif t4 < t
-        return x5(t) , y5(t)
+        return x5(t), y5(t)
     end
 end
 
@@ -431,7 +438,8 @@ function projV(t)
         return vx3(t), vy3(t)
     elseif t3 < t <= t4
         return vx4(t), vy4(t)
-    else t4 < t
+    else
+        t4 < t
         return vx5(t), vy5(t)
     end
 end
@@ -473,7 +481,8 @@ function projVx(t)
         return vx3(t)
     elseif t3 < t <= t4
         return vx4(t)
-    else t4 < t
+    else
+        t4 < t
         return vx5(t)
     end
 end
@@ -487,54 +496,73 @@ function projVy(t)
         return vy3(t)
     elseif t3 < t <= t4
         return vy4(t)
-    else t4 < t
+    else
+        t4 < t
         return vy5(t)
     end
 end
 
-function preCalc(;print = true)
-    if 1 > θ > 2*acot(q)/π
-        d1Vals(v0 * cospi(θ / 2), v0 * sinpi(θ / 2) , track = print)
+function preCalc(; print=true)
+    if 1 > θ > 2 * acot(q) / π
+        d1Vals(v0 * cospi(θ / 2), v0 * sinpi(θ / 2), track=print)
         global t1 = secantRF(r1, 0)
-        if print println("t1 = " , t1 , "\n") end
-        d2Vals(x1(t1), y1(t1), vx1(t1) , vy1(t1) , track = print)
-        global t2 = secantRF(r2 , t1)
-        if print println("t2 = " , t2 , "\n") end
-        d3Vals(x2(t2) , y2(t2) , vx2(t2) , vy2(t2) , track = print)
-        global t3 = secantRF(r3 , t2)
-        if print println("t3 = " , t3 , "\n") end
-        d4Vals(x3(t3) , y3(t3) , vx3(t3) , track = print)
-        global t4 = secantRF(r4 , t3)
-        if print println("t4 = " , t4 , "\n") end
-        d5Vals(x4(t4) , y4(t4) , vx4(t4) , track = print)
+        if print
+            println("t1 = ", t1, "\n")
+        end
+        d2Vals(x1(t1), y1(t1), vx1(t1), vy1(t1), track=print)
+        global t2 = secantRF(r2, t1)
+        if print
+            println("t2 = ", t2, "\n")
+        end
+        d3Vals(x2(t2), y2(t2), vx2(t2), vy2(t2), track=print)
+        global t3 = secantRF(r3, t2)
+        if print
+            println("t3 = ", t3, "\n")
+        end
+        d4Vals(x3(t3), y3(t3), vx3(t3), track=print)
+        global t4 = secantRF(r4, t3)
+        if print
+            println("t4 = ", t4, "\n")
+        end
+        d5Vals(x4(t4), y4(t4), vx4(t4), track=print)
 
-    elseif 2*acot(q)/π >= θ > 2*atan(q)/π
+    elseif 2 * acot(q) / π >= θ > 2 * atan(q) / π
 
         global t1 = 0
 
-        d2Vals(0, 0 , v0 * cospi(θ / 2), v0 * sinpi(θ / 2) , track = print)
-        global t2 = secantRF(r2 , 0)
-        if print println("t2 = " , t2 , "\n") end
-        d3Vals(x2(t2) , y2(t2) , vx2(t2) , vy2(t2) , track = print)
-        global t3 = secantRF(r3 , t2)
-        if print println("t3 = " , t3 , "\n") end
-        d4Vals(x3(t3) , y3(t3) , vx3(t3) , track = print)
-        global t4 = secantRF(r4 , t3)
-        if print println("t4 = " , t4 , "\n") end
-        d5Vals(x4(t4) , y4(t4) , vx4(t4) , track = print)
+        d2Vals(0, 0, v0 * cospi(θ / 2), v0 * sinpi(θ / 2), track=print)
+        global t2 = secantRF(r2, 0)
+        if print
+            println("t2 = ", t2, "\n")
+        end
+        d3Vals(x2(t2), y2(t2), vx2(t2), vy2(t2), track=print)
+        global t3 = secantRF(r3, t2)
+        if print
+            println("t3 = ", t3, "\n")
+        end
+        d4Vals(x3(t3), y3(t3), vx3(t3), track=print)
+        global t4 = secantRF(r4, t3)
+        if print
+            println("t4 = ", t4, "\n")
+        end
+        d5Vals(x4(t4), y4(t4), vx4(t4), track=print)
 
-    elseif 2*atan(q)/π >= θ > 0
+    elseif 2 * atan(q) / π >= θ > 0
 
         global t1 = 0
         global t2 = 0
 
-        d3Vals(0, 0 , v0 * cospi(θ / 2), v0 * sinpi(θ / 2) , track = print)
-        global t3 = secantRF(r3 , 0)
-        if print println("t3 = " , t3 , "\n") end
-        d4Vals(x3(t3) , y3(t3) , vx3(t3) , track = print)
-        global t4 = secantRF(r4 , t3)
-        if print println("t4 = " , t4 , "\n") end
-        d5Vals(x4(t4) , y4(t4) , vx4(t4) , track = print)
+        d3Vals(0, 0, v0 * cospi(θ / 2), v0 * sinpi(θ / 2), track=print)
+        global t3 = secantRF(r3, 0)
+        if print
+            println("t3 = ", t3, "\n")
+        end
+        d4Vals(x3(t3), y3(t3), vx3(t3), track=print)
+        global t4 = secantRF(r4, t3)
+        if print
+            println("t4 = ", t4, "\n")
+        end
+        d5Vals(x4(t4), y4(t4), vx4(t4), track=print)
     end
 end
-    
+

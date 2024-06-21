@@ -1,0 +1,1 @@
+This code implements a highly accurate model for an object with a uniform drag profile that is modeled as the square of the velocity of the object. This is a part of on going reserch for finding analytic aproximations to the drag equations in two dimensions.
